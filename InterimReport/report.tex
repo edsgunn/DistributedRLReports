@@ -1,0 +1,194 @@
+%++++++++++++++++++++++++++++++++++++++++
+% Don't modify this section unless you know what you're doing!
+\documentclass[letterpaper,11pt]{article}
+\usepackage{natbib}
+\usepackage{tabularx} % extra features for tabular environment
+\usepackage{amsmath}  % improve math presentation
+\usepackage{graphicx} % takes care of graphic including machinery
+\usepackage[margin=1in,letterpaper]{geometry} % decreases margins
+\usepackage{amssymb}
+%\usepackage{cite} % takes care of citations
+\usepackage[final]{hyperref} % adds hyper links inside the generated pdf file
+
+\hypersetup{
+	colorlinks=true,       % false: boxed links; true: colored links
+	linkcolor=blue,        % color of internal links
+	citecolor=blue,        % color of links to bibliography
+	filecolor=magenta,     % color of file links
+	urlcolor=blue         
+}
+%+++++++++++++++++++++++++++++++++++++++
+%Definitions
+\newcommand{\states}{\mathcal{S}}
+\newcommand{\actions}{\mathcal{A}}
+\newcommand{\agents}{\mathcal{N}}
+
+
+
+%+++++++++++++++++++++++++++++++++++++++
+\begin{document}
+
+\title{4YP Interim Report \\\textbf{Distributed Reinforcement Learning on the Edge} \\ Project Number: 12737}
+\author{Student: Edward Gunn \\Supervisor: Konstantinos Gatsis}
+\maketitle
+
+\section{Motivation}
+
+To learn how to act in an environment autonomous systems collect time-series data from repeated measurements. 
+In the case where there are multiple agents, it is possible to learn from data collected from different physical locations in a distributed manner. 
+This is true for multiple robots executing a task, sensors and actuators in industrial control systems, or multiple autonomous vehicles navigating in traffic. 
+To share the data agents must communicate; communication exchanges between devices of networked systems are costly due to limited resources.
+Therefore, it is of value to develop algorithms that can take advantage of the distributed data to learn how to act in the environment while also minimising the amount of communication necessary to achieve this.
+
+
+\section{Project Overview}
+
+This project explores distributed Reinforcement Learning on the Edge.
+In Reinforcement Learning an agent acts in an environment and tries to maximise the expected reward it will receive by choosing the best actions to take at each step.
+The distributed problem extends this to a set of multiple agents which can communicate with a central learner.
+They can share data in order to increase the rate of learning.
+On the Edge we consider sending messages to the central learner to be expensive and hence we try to minimise the number of messages sent.
+This can be achieved by optimising when messages are sent and when they are sent what data they contain.
+There are three main objectives of the project:
+\begin{enumerate}
+
+	\item Implement and evaluate known Distributed Reinforcement Learning algorithms \label{one}
+
+	\item Develop a new algorithm to attempt to reduce the number of messages that are sent between the agents and the central learner \label{two}
+
+	\item Time permitting expand the algorithm to a setting where all the agents are working in a single environment \label{three}
+
+\end{enumerate}
+
+In order to evaluate known Distributed Reinforcement Learning algorithms  we need to establish metrics against which they can be evaluated.
+For this project these metrics are how well the algorithms learn and how much they communicate.
+
+To develop a new algorithm we will initially constrain ourselves to agents working alone in identical environments.
+This will simplify the problem as the agents will not need to learn how to interact.
+We need a schema for when to send messages to the central learner and what to send in them.
+There are a number of things that could possibly be shared in communication, including:
+
+\begin{itemize}
+	\item Experience - SARSA tuples (state, action, reward, next state, next action)
+
+	\item Gradients - value or policy
+	
+	\item Value functions or changes in value function
+
+\end{itemize}
+
+After the initial algorithm has been developed, if there is time left, we could expand to testing the algorithm with multiple agents working in one environment.
+This would more accurately model a real work scenario such as autonomous vehicles where the agents will only interact occasionally 
+
+\section{Progress to Date}
+
+In the project so far I have mainly getting familiar with reinforcement learning in general.
+I started with reading around the subject mainly using \cite{bertsekas2019reinforcement} along with the lecture series \cite{silver2015}.
+I have also written a framework in python that allows me to pair single agents with environments in order to test and evaluate them. 
+I started with implementing simple online learning algorithms in episodic environments, but it became apparent that offline algorithms would be better suited to distributed RL as well as being less noisy.
+I have since been looking into implementing offline algorithms.
+
+% \textbf{TALK ABOUT NEUMERICAL EVALUATION OF MODELS HERE AND SHOW GRAPHS}
+Separate from my exploration of the basics of Reinforcement Learning I have been attempting to narrow the problem at hand to be suitable for a 4YP.
+I have done this through considering areas of the project which significantly affect its scope and attempting to refine definitions such that the problem becomes tractable.
+% Specifically I have found four problems which could require further definition:
+% \begin{itemize}
+% 	\item How separately are the agents working? For greatest simplicity we will start the project assuming they are working in entirely separate MDPs. 
+% 	As a possible expansion of the project given the opportunity this could be relaxed to let agents interact in an environment.
+	
+% 	\item What does it mean to be expensive to communicate -  we could simply say "We want to minimise number of messages sent"
+	
+% 	\item How smart are the agents vs the central learner - how would our approach change with different levels of agent intelligence
+
+% \end{itemize}
+
+\section{Project Timeline}
+
+\begin{tabular}{r | l | c}
+
+Expected Completion & Task & Objective \\
+\hline
+& & \\
+End of Michaelmas & Expand RL framework to be able to test multiple agents & \ref{one}\\
+& Run a test of vanilla distributed RL & \\
+Christmas & Implement algorithms in \cite{EventBasedDQL}, \cite{ComEfficientDRL}, \cite{FederatedRL} & \\
+& Visualise their communication efficiency & \\
+Start of Hilary & Develop new algorithm with increased communication efficiency & \ref{two} \\
+& Evaluate new algorithm against those previously evaluated & \\
+During Hilary & Test algorithm with only one environment & \ref{three} \\
+
+\end{tabular}
+
+% \section{Report structure}
+% There is a huge array of scenarios in which solutions to this problem can be applied.
+% Any environment in which there are many agents with low computational power that act in a distributed manner and can communicate with a central server could benefit from work in this area.
+% For example, it could be applied in the autonomous vehicles space or in a scenario when we have a number of drones learning to achieve a task.
+% I intend to develop an algorithm which approaches this problem by focusing specifically on minimising the number of messages sent while at least maintaining the rate of learning achieved by a single agent.
+
+% • Overview of the project \\
+% Briefly describe the project in the context of appropriate background and motivation \\
+% • Key project objectives \\
+% Describe your aims and discuss whether the original project objectives were modified \\
+% • Progress to date \\
+% Describe your achievements thus far. Include information on literature review and experimental, numerical and/or theoretical results \\
+% • Immediate tasks \\
+% Briefly explain what are you currently working on \\
+% • Plan of work to the end of the project \\
+% List the remaining tasks with estimated dates of completion \\
+
+% Autonomous systems need to collect measurement data from the environment in order to overcome uncertainties and learn appropriate behaviours. For autonomous systems that involve multiple agents, this also raises the possibility of learning from data collected I from different physical locations in a distributed manner. This is for example the case for sensors and actuators in industrial control systems, multiple robots executing a task, or multiple autonomous vehicles navigating in traffic. This is a form of distributed learning and has recently become popular under the name of federated learning. An important challenge arises as communication exchanges between devices of networked systems are costly due to limited resources.
+% | This project considers a setup where multiple agents need to communicate efficiently in order to jointly solve a reinforcement learning problem over time-series data collected in a distributed manner. This project will explore learning an approximate value function or learning approximately optimal control policies over a communication network. This will involve implementing algorithms for achieving communication efficiency, supported with analytical guarantees, practical implementations, and numerical evaluations communication efficiency can be measured by the total number of messages exchanged between agents
+
+
+% \section{Reinforcement Learning}
+
+% In Reinforcement Learning an agent acts in an environment and tries to maximise the expected reward it will receive by choosing the best actions to take at each step.
+% Formally we say that the environment is a Markov Decision Process (MDP) which has a set of states $S_t \in \states$ where for each state there is a set of possible actions that can be taken $A_t \in \actions(S_t)$.
+% At each step and agent chooses an action and receives a reward $R_t = f(S_t,A_t,S_{t+1})$.
+% The goal of the agent is to find a policy $\pi(s_t) = \underset{a_t}{\arg\max}\mathbb{E}[f(s_t,a_t,s_{t+1}) + \sum_{k = t+1}^{N}f(s_k,\pi(s_k),s_{k+1})]$ which maximises the expected cumulative reward for the duration it is active. 
+% There exists a number of similar formulations of this problem with slightly different conditions such as for $N\rightarrow \infty $ or for continuous state and action spaces $\|{\states}\|,\|{\actions}\| \rightarrow \infty$. In this report we will consider the general problem of reinforcement learning and so will have them all in mind.
+% \\ What is it?
+
+% \section{Distributed RL}
+% Distributed Reinforcement Learning is a subfield dedicated to looking at situations in which there is multiple agents acting in a number of environments who can communicate with each other.
+% The can share data and distribute the computation associated with learning.
+% Formally, as stated in \cite{EventBasedDQL}, we can say for an MDP $(\states^N,\actions^N,P,r)$ a set of actors $\agents = {1,2, \dots, N}$ initialised at the same $s_0 \in \states$ communicate with a single central learner $\hat{Q}: \states \times \actions \rightarrow \mathbb{R}$.
+% The subsets $\agents_s = \{i \in \agents: s_i = s\}$ have cardinality $N_s$.
+% At each time step the central learner updates with samples $u_i$ from all $i \in \agents$ as:
+% \begin{equation}
+% 	\hat{Q}_{t+1}(s,a) = \hat{Q}_t(s,a) + \alpha \frac{1}{N_s}\sum_{i \in \agents_s}\hat{\Delta}_t(u_i)
+% \end{equation}
+% This is guaranteed to converge to $Q^*$ under certain assumptions.
+% \\ How is it useful? \\ Goals of Distributed RL
+% \section{Federated Learning}
+
+% How is it different from Distributed RL? \\ Why is it important? \\ State how the goals differ
+% \section{Methodology}
+
+% What have I done so far? \\ 
+% In the project so far I have mainly getting familiar with reinforcement learning in general.
+% I started with reading around the subject mainly using \cite{bertsekas2019reinforcement} along with the lecture series \cite{silver2015}.
+% I have also written a framework in python that allows me to pair single agents with environments in order to test and evaluate them. 
+% I started with implementing simple online learning algorithms in episodic environments, but it became apparent that offline algorithms would be better suited to distributed RL as well as being less noisy.
+% I have since been looking into implementing offline algorithms.
+
+% Separate from my exploration of the basics of Reinforcement Learning I have been attempting to narrow the problem at hand to be suitable for a 4YP.
+% I have done this through considering areas of the project which significantly affect its scope and attempting to refine definitions such that the problem becomes tractable.
+% Specifically I have found four problems which could require further definition:
+% \begin{itemize}
+% 	\item How separately are the agents working? For greatest simplicity we will start the project assuming they are working in entirely separate MDPs. 
+% 	As a possible expansion of the project given the opportunity this could be relaxed to let agents interact in an environment.
+	
+% 	\item What does it mean to be expensive to communicate -  we could simply say "We want to minimise number of messages sent"
+	
+% 	\item How smart are the agents vs the central learner - how would our approach change with different levels of agent intelligence
+
+% \end{itemize}
+% \section{Conclusion}
+% This section should be brief, concise, but complete. Directly answer your objectives, state your findings with errors, and conclude whether you were successful. Briefly explain if not successful.
+
+\bibliographystyle{plain}
+
+\bibliography{report}
+
+\end{document}
