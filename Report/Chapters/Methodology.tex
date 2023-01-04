@@ -1,0 +1,59 @@
+\chapter{Methodology}
+
+\section{Metrics}
+\begin{itemize}
+    \item Communication efficiency
+    \begin{itemize}
+        \item How many messages are sent
+        \item How many bits are sent
+    \end{itemize}
+    \item Quality of Learning
+    \begin{itemize}
+        \item Average reward over episodes/time
+        \item Convergence to optimal value function (can only be used on agents with a value function) or optimal reward
+        \item Comparison to single agent
+        \item Comparison to distributed Q learning
+    \end{itemize}
+
+
+\end{itemize}
+
+\section{Trials}
+
+Constants in comparison:
+\begin{itemize}
+    \item Number of agents
+    \item Task
+\end{itemize}
+
+\noindent Algorithms to be tested
+\begin{itemize}
+    \item TD lambda
+    \item Single agent offline without Q dependence
+    \item Single agent offline with Q dependence
+    \item Distributed Q learning
+    \item Evolution Sampling
+    \item Konstantinos' algorithm
+    \item Value threshold
+    \item Gradient threshold
+\end{itemize}
+
+\begin{algorithm}
+    \caption{Trial structure}\label{alg:Task1}
+    \begin{algorithmic}
+    \State Initialise Universe
+    \For {each number of agents}
+        \For {each algorithm}
+            \State run training
+            \For {each episode}
+                \State record number of messages sent
+                \State record total number of bits sent in messages
+                \State record total reward
+                \State record final value function
+                \State 
+
+            \EndFor
+        \EndFor
+    \EndFor
+    \end{algorithmic}
+\end{algorithm}    
