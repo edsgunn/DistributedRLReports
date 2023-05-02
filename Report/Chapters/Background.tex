@@ -2,9 +2,9 @@
 
 \section{Reinforcement learning}
 \label{sec:RL}
-Reinforcement learning (RL) is a subfield of machine learning that focuses on developing algorithms and models that allow an agent to learn through trial-and-error interactions with an environment. Agents are rewarded for achieving specific goals and punished for undersirable behaviours. RL has its roots in the field of psychology, where researchers studied the behavior of animals and humans as they learned through positive and negative feedback. Due to it's versatility RL is used in a number of fields such control theory, game theory and multi-agent systems. It has been successfully applied to a wide range of problems, including game playing, robotics, and natural language processing. However, it remains a challenging and active area of research, particularly in complex and high-dimensional environments as well as environments in which there are multiple agents. 
+Reinforcement learning (RL) is a subfield of machine learning that focuses on designing algorithms and models that allow an agent to learn through interacting with an environment. Agents are rewarded for achieving specific goals and punished for undesirable behaviours. RL has its roots in the field of psychology, where researchers studied the behaviour of animals and humans as they learned through positive and negative feedback. Due to its versatility RL is used in a number of fields such control theory, game theory and multiagent systems. It has been successfully applied to a wide range of problems, including game playing, robotics, and natural language processing. However, it remains a challenging and active area of research, particularly in complex and high-dimensional environments as well as environments in which there are multiple agents. 
 
-In RL, an agent learns by receiving feedback in the form of rewards or punishments for each action taken in the environment. The agent interacts with the environment through a series of discrete time steps. At each time step, the agent observes the current state of the environment and chooses an action based on its current policy. The environment then transitions to a new state and provides the agent with a reward signal based on the chosen action and the new state. The agent updates its policy based on the reward signal, with the goal of maximizing cumulative reward over time.
+In RL, an agent learns by receiving feedback in the form of rewards or punishments for each action taken in the environment. The agent interacts with the environment through a series of discrete time steps. At each time step, the agent observes the current state of the environment and chooses an action based on its current policy. The environment then transitions to a new state and provides the agent with a reward based on the chosen action and the new state. The agent updates its policy based on the reward signal, with the goal of maximizing expected cumulative discounted reward over time.
 
 Formally, the problem of RL can be modeled as a Markov decision process (MDP), which can be described by the 5-tuple $\mathcal{M} = (\mathcal{S}, \mathcal{A}, \mathcal{P}, R,\gamma)$ where $\mathcal{S}$ is the state space, $\mathcal{A}$ is the action space, $\mathcal{P}$ is a set of action-dependent Markov transition kernels, $R: \mathcal{S} \rightarrow \mathbb{R}$ is a reward function and $\gamma \in [0,1]$ is the discount factor.
 The actions an agent takes are determined by its policy $\pi: \mathcal{S} \rightarrow \mathcal{A}$. The policy can be alternatively defined as a distribution over actions $a \sim \pi(s)$. This can be advantagious as a non-deterministic policy can lead to greater exploration and can more easily avoid local optima. However, this leads to complications in mathematical analysis as expectations have to be taken over actions as well as states.
@@ -14,7 +14,7 @@ In order to ensure episodes are of finite length we require a non-empty set of s
 We also require that every policy $\pi$ has a non-zero probability of reaching $\Omega$ at some point in the trajectory starting from every state.
 
 
-The value of a particular policy in a particular state is defined as the  expected cumulative discounted reward the agent will recieve 
+The value of a particular policy in a particular state is defined as the  expected cumulative discounted reward the agent will receive starting in that state
 \begin{align*}
         V^\pi(s) &= \mathbb{E} [ \sum_{t=0}^\infty \gamma^t R(s_t)|s_0=s] \\
         &= R(s_0) + \gamma \mathbb{E} [V^\pi(s_1)],
@@ -24,11 +24,12 @@ where $s_t$ is the state at time $t$ starting from $s_0=s$ and folling policy $\
     V^*(s) = \max_\pi V^\pi(s),
 \end{equation*}
 which yeilds the optimal policy $\pi^*(s) = \arg \max_\pi V^\pi(s)$. 
-We can find the optimal value function using value iteration
+We can find the optimal value function using value iteration by repeating the update
 \begin{equation*}
     V_t(s) \leftarrow \max_{a \in \mathcal{A}} R(s) + \mathbb{E} V_{t-1}(s'),
 \end{equation*}
-which converges when the state and action spaces are finite and reward values have a finite upper and lower bound.
+for all states $s \in \mathcal{S}$ until convergence is achieved.
+Value iteration is guaranteed to converge when the state and action spaces are finite, and reward values have a finite upper and lower bound.
 
 It is common to come across environments where the state space is too large to use a tabular value functions as above. It will take too many iterations to have visited all the states to be able to have an accurate estimate of their value. It is thus necessary to use a function approximator so that all states can be represented. A common method for this is linear value approximation
 \begin{equation*}
@@ -46,7 +47,7 @@ With this we can use Q-learning to approximate the optimal action value function
 \end{equation*} 
 where $\alpha$ is the learning rate. This is not guaranteed to converge but often does in practice.
 
-Alternatively to optimizing in value space we can optimise in policy space directly. One method for this is policy iteration where on each step we calculate the value function for the current policy then update the policy with 
+Alternatively to optimizing in value space we can optimize in policy space directly. One method for this is policy iteration where on each step we calculate the value function for the current policy then update the policy with 
 \begin{equation*}
     \pi^{new}(s) \leftarrow \arg \min_{a \in \mathcal{A}} R(s) + \gamma V^{\pi^{old}}(s').
 \end{equation*}
@@ -55,7 +56,7 @@ We define the objective function as the discounted expected cumulative reward fr
 \begin{equation*}
     J^\theta(s) = \mathbb{E} [ \sum_{t=0}^\infty \gamma^t R(s_t)|s_0=s] = V^{\pi_\theta}(s)
 \end{equation*}
-Since the policy is now parameterized we can take its gradient with respect to some objective function and perform gradient ascent to optimize it. A well know algorithm for this is REINFOCE \cite{REINFORCE} shown in algorithm \ref{alg:REINFORCE}
+Since the policy is now parameterized we can take its gradient with respect to some objective function and perform gradient ascent to optimize it. A well know algorithm for this is REINFOCE \cite{REINFORCE} shown in algorithm \ref{alg:REINFORCE}.
 
 \begin{algorithm}
     \caption{REINFORCE algorithm}\label{alg:REINFORCE}
@@ -76,12 +77,12 @@ Since the policy is now parameterized we can take its gradient with respect to s
 
 
 Federated learning (FL) \cite{FederatedLearning} is a machine learning technique where training is performed in a decentralized manner, often on physically separate devices such as mobile phones, IoT devices or other edge devices. 
-The critial issue federated learning attempts to address is that of training a robust model while preserving data privacy, data security, and data access rights.
-A challege that arises when faced with these constraints is the breakdown of the assumption that local data samples are identially distributed.
+The critical issue federated learning attempts to address is that of training a robust model while preserving data privacy, data security, and data access rights.
+A challenge that arises when faced with these constraints is the breakdown of the assumption that local data samples are identically distributed.
 In FL we aim leverage the computing power and data generated by these distributed devices to build a shared model, while preserving the privacy and security of the data.
 
-Federated learning can be broadly divided into four main phase, initailaisation, training, aggregation and testing. 
-First during initailaisation phase the central server initializes a machine learning model, for example a deep neural network, and shares it with a set of devices. 
+Federated learning can be broadly divided into four main phases, initialization, training, aggregation and testing. 
+First during initialization phase the central server initializes a machine learning model, for example a deep neural network, and shares it with a set of devices. 
 Next in the training phase, each device trains the model on its local training set, then evaluates the performance of the local model on the local evaluation set. 
 The updated model parameters are sent back to the central server. 
 The central server then aggregates these parameters and updates the shared model accordingly.
@@ -97,39 +98,46 @@ Federated learning has several advantages over traditional centralized machine l
 Distributed reinforcement learning (DRL) involves training an RL agent in a distributed manner across multiple machines, which may be physically separated, that work together to learn a single policy. DRL provides and advantage in large, complex environments or problems where single-agent RL might be too slow.
 There exists two main paradigms of DRL: centralized training and decentralized execution (CTDE) and decentralized training and decentralized execution (DTDE).
 
-In CTDE, a central learner is trained on the experience communicated from the agents. All agents share the same state and action space and collect trajectories through acting in an environment. The central learner then updates a shared policy based on the commmunications it recieves from agents. This architecture has been shown to be effective in multi-agent settings, where the actions of one agent affect the rewards of another.
+In CTDE, a central learner is trained on the experience communicated from the agents. All agents share the same state and action space and collect trajectories through acting in an environment. The central learner then updates a shared policy based on the communications it receives from agents. 
+% This architecture has been shown to be effective in multi-agent settings, where the actions of one agent affect the rewards of another.
 
-In DTDE, each agent learns independently by acting in the environment. They maintain their own policy, updating it based on observations and rewards recieved from the environment. The agents communicate with each other directly to coordinate actions and improve performance. It is often more scalable and robust than CTDE, however, it can be less efficient in certain scenarios.
+In DTDE, each agent learns independently by acting in the environment. They maintain their own policy, updating it based on observations and rewards received from the environment. The agents communicate with each other directly to coordinate actions and improve performance. It is often more scalable and robust than CTDE, however, it can be less efficient in certain scenarios.
 
-DRL is faced with issues when considering the communication and synchronization between agents. Centralized communication frameworks are often used, where a central server manages the communication and synchronization between the agents. An altertnative to this is to use a decentralized communication framework, where agents communicate directly.
+DRL is faced with issues when considering the communication and synchronization between agents. Centralized communication frameworks are often used, where a central server manages the communication and synchronization between the agents. An alternative to this is to use a decentralized communication framework, where agents communicate directly.
 
 As well as this, DRL can take advantage of a number of existing RL algorithms, such as Q-learning, policy gradient methods, and actor-critic methods. These algorithms can be adapted for DRL by using mechanisms to handle distributed learning.
 
-Federated reinforcement learning (FRL) is a subfield of DRL which adopts the philosiphies underpinning federated learning. This includes the prohibition of sharing raw data, in this case taking the form of agent trajectories, between agents. They instead communicate data such as policy or value gradients.
+Federated reinforcement learning (FRL) is a subfield of DRL which adopts the philosophies underpinning federated learning. This includes the prohibition of sharing raw data, in this case taking the form of agent trajectories, between agents. They instead communicate data such as policy or value gradients.
 
 \section{Exisiting algorithms}
 \subsection{Distributed Q learning}
-Distributed Q learning (DQL) adapts Q-learing to a distributed setting, increasing exploration and leading to an increase of the rate of convergce to the optimal policy. 
+Distributed Q learning (DQL) adapts Q-learing to a distributed setting, increasing exploration and leading to an increase of the rate of convergence to the optimal policy. 
 The agents communicate the trajectory collected after every episode.
-The central learner determines the Q update by iterating through the agents and at each time step $t=1,\dots,n$ taking sample $u = (s_{t-1},a_t,r_t,s_t)$  and calculating $\Delta(u) = R(s_t) + \gamma \max_a Q(s_t,a) - Q(s_{t-1},a_t)$ is the TD error.
+The central learner determines the Q update by iterating through the agents and at each time step $t=1,\dots,n$ taking sample $u = (s_{t-1},a_t,r_t,s_t)$  and calculating $\Delta(u) = R(s_t) + \gamma \max_a Q(s_t,a) - Q(s_{t-1},a_t)$ which is the TD error.
 Let the subsets $\mathcal{U}_s = \{u: s_{t-1}=s\}$.
 The Q function is then updated by 
 \begin{equation*}
     Q^{updated}(s,a) = Q^{old}(s,a) + \alpha \frac{1}{|\mathcal{U}_s|} \sum_{u \in \mathcal{U}_s} \Delta(u).
 \end{equation*}
 
-This method provides good convergence behaviour on simple environments, althought it is not guaranteed to converge. It reasonably assigns credit for a reward to a given action even if the reward is delayed. However, due to the use of a tabular value function this method can perform poorly on environments with a large number of state-actions as even after many iterations it will come across states it has seldom visited and thus does not have an accurate estimate of their value. As well as this the build up of a large table of Q values can fill the memory of the computer the algorithm is running on leading to a reduction in performance and evenutally can cause it to crash.
+This method provides good convergence behaviour on simple environments, although it is not guaranteed to converge. It reasonably assigns credit for a reward to a given action even if the reward is delayed. However, due to the use of a tabular value function this method can perform poorly on environments with many state-actions as even after many iterations it will come across states it has seldom visited and thus does not have an accurate estimate of their value. As well as this the build up of a large table of Q values can fill the memory of the computer the algorithm is running on leading to a reduction in performance and eventually can cause it to crash.
 Also, since the whole trajectory is communicated at each step the size of the messages sent can become very large for environments with long episode lengths or large state representations such as pixels on a screen meaning communication efficiency is poor.
+
+Deep Q-learning is often used to address the performance issues where a neural network is used to approximate the Q function by estimating the value for each action in each state. This allows for use in larger, more complex environments. Data from a trajectory is used to approximate the gradient of the TD error with respect to the model parameters, allowing the use of gradient descent to minimize the error of the prediction. The model is often split into a prediction network, which approximates the value of the current state and a target network, which approximates the target from which we calculate the TD error.
 
 \subsection{Event based communication DQL}
 Event based communication distributed Q Learning (EBCDQL) \cite{EBCDQL} uses a communication scheme based on Event Triggered Control (ETC) techniques to reduce the communication of DQL while maintaining good learning performance.
 The algorithm works similarly to vanilla DQL, however, agents only communicate the samples that have a TD error above the threshold defined as 
-$|\hat{\Delta}(u_i)| \geq \max(\rho L_i(t), \epsilon)$ where $L_i(t) = (1-\beta)L_i(t)+ \beta |\hat{\Delta}(u_i)|$ and $L_i(0)=0$.
+\begin{equation*}
+    |\hat{\Delta}(u_i)| \geq \max(\rho L_i(t), \epsilon) 
+\end{equation*}
 
-This algorithms exhibits the same benefits and frawbacks as DQL, however, it has much better communication efficiency as it only sends samples when they provide sufficient updates.
+where $L_i(t) = (1-\beta)L_i(t)+ \beta |\hat{\Delta}(u_i)|$ and $L_i(0)=0$.
+
+This algorithm exhibits the same benefits and drawbacks as DQL, however, it has much better communication efficiency as it only sends samples to the central learner when they provide sufficient updates to the Q function.
 
 \subsection{Distributed approximate value iteration algorithm}
-In the distributed approximate value iteration algorithm (DAVIA) \cite{DAVIA}, agents communicate when a gradient step update provide a sufficient increase in the objective function, the threshold for which decreases over time. The objective function in this case is defined as the expected squred error between the update value function and the current value function. 
+In the distributed approximate value iteration algorithm (DAVIA) \cite{DAVIA}, agents communicate when a gradient step update provides a sufficient increase in the objective function, the threshold for which decreases over time. The objective function in this case is defined as the expected squared error between the updated value function and the current value function. 
 \begin{equation*}
     J(\theta) = \mathbb{E}[V^{updated}(s) - \sum_{i=1}^n \theta_i \phi_i(s)]^2
 \end{equation*} 
@@ -142,7 +150,7 @@ and the condition for communication is represented by
 \begin{equation*}
     J(\theta_k - \epsilon \hat{\nabla}J(\theta_k)) \leq \frac{\lambda}{\rho^{N-1-k}}.
 \end{equation*}
-In the central learner the gradient is updated by the mean of the transmitted gradients. This algorithm is guaranteed to converge under technical assumptions and shows good communication efficiency as only they gradients are communicated. The approximated value function also means it is able to handle more complex problems than DQL with larger state spaces. However, this does require pre-defined feature vectors for each state.
+In the central learner the gradient is updated by the mean of the transmitted gradients. This algorithm is guaranteed to converge under technical assumptions and shows good communication efficiency as only the gradients are communicated. The approximated value function also means it is able to handle more complex problems than DQL with larger state spaces. However, this does require pre-defined feature vectors for each state.
 
 \subsection{Evolution Strategies}
 Evolution Strategies (ES) \cite{ES} is a black-box optimization technique which approximates the policy gradient, or more specifically, the gradient of the expected cumulative discounted reward with respect to the parameters of a parameterized policy.
@@ -161,9 +169,9 @@ It is useful to note that since $\mathbb{E}_{\epsilon \sim N(0,I)}[F(\theta)\eps
 \begin{equation*}
     \mathbb{E}_{\epsilon \sim N(0,I)}[F(\theta+\sigma \epsilon) \epsilon/\sigma] = \mathbb{E}_{\epsilon \sim N(0,I)}[(F(\theta+\sigma \epsilon) - F(\theta))\epsilon/\sigma]
 \end{equation*}
-from which we can see that ES is computing the finite difference estimate of the gradient in a random direction. This suggests that this method will sclae poorly with the dimension of the parameters $\theta$. However, in experiments this effect is not observed, in fact larger neural networks tend to perform better. The authors hypothesise this is becuase larger networks have fewer local minima \cite{LocalMinima}.
+from which we can see that ES is computing the finite difference estimate of the gradient in a random direction. This suggests that this method will scale poorly with the dimension of the parameters $\theta$. However, in experiments this effect is not observed, in fact larger neural networks tend to perform better. The authors hypothesize this is because larger networks have fewer local minima \cite{LocalMinima}.
 
-The main advantage of ES is its suitability for scalable parallelization. This is due to the minimal communication between agents and central learner as well as the absence of any backpropagation calculation. This means that ES can provide order of magnitude speed up in training time depite the poor data inefficiency it exhibits. It also benefits from the fact that it only uses a parameterized policy so is suitable for any size of problem including those with continuous state and action spaces, however, by discretizing actions ES exhibits better exploration performance on some environments.
+The main advantage of ES is its suitability for scalable parallelization. This is due to the minimal communication between agents and central learner as well as the absence of any backpropagation calculation. This means that ES can provide order of magnitude speed up in training time despite the poor data inefficiency it exhibits. It also benefits from the fact that it only uses a parameterized policy so is suitable for any size of problem including those with continuous state and action spaces, however, by discretizing actions ES exhibits better exploration performance on some environments.
 
 ES performs excellently in terms of the size of the messages sent, communicating only a single scalar per agent. However, since this communication occurs after every episode, the performance in terms of number of messages sent is poor.
 

@@ -5,16 +5,16 @@ We are surrounded by distributed systems that make up a significant proportion o
 From social media to electrical power networks, it is essential we understand and improve their inner workings to allow them to cope with the ever-increasing demands of the modern world. 
 Distributed systems provide great advantages over centralized ones. 
 One advantage is scalability, by distributing a workload we are able to handle more data, more users, and more complex tasks.
-Distributed systems are also more resiliant than centralized ones, they can continue to function when exposed to failures.
-The also provide a boost to performance as they can process data faster and more efficiently through parallelization. 
+Distributed systems are also more resilient than centralized ones, they can continue to function when exposed to failures.
+They also provide a boost to performance as they can process data faster and more efficiently through parallelization. 
 However, as the size of these systems grow, they are, often bottlenecked by their communication bandwidth. To take full advantage of the scalability of distributed systems and reduce the cost associated with communication we must develop communication efficient algorithms that maximize the rate of learning while minimizing the number and size of the messages that are exchanged.
 
 The field of reinforcement learning (RL), recently highlighted by some very high profile algorithms such as AlphaGo \cite{AlphaGo} and OpenAI Five \cite{OpenAIFive}, aims to find policies that maximize the reward achieved in an environment. The problem setting it provides is incredibly versatile, with applications including robotics \cite{TableTennis}, games \cite{AlphaStar}, control systems \cite{TriplePendulum}, natural language processing \cite{RLHF}, and computer vision \cite{Vision}. 
 
-Inspired by this, distributed deinforcement learning (DRL) maintains the framework but distributes the learning process with the goal of speeding up training and allowing for the use of larger more complex models. However, as with all distributed systems, we may face a communication bottleneck leading to the desire to reduce how often agents communicate and how large the messages are when they do.
-As well as this, in many scenarios in which the data itself is distributed across devices and sharing this data is prohibited, for example for privacy or legal reasons, we must find a way to train a model while adhereing to these constaints. This is the problem addressed in federated reinforcement learning (FRL).
+Inspired by this, distributed reinforcement learning (DRL) maintains the framework but distributes the learning process with the goal of speeding up training and allowing for the use of larger more complex models. However, as with all distributed systems, we may face a communication bottleneck leading to the desire to reduce how often agents communicate and how large the messages are when they do.
+As well as this, in many scenarios in which the data itself is distributed across devices and sharing this data is prohibited, for example for privacy or legal reasons, we must find a way to train a model while adhering to these constraints. This is the problem addressed in federated reinforcement learning (FRL).
 
-In distributed systems the bandwith available for communication between nodes varies widely. It is therefore desirable to develop algorithms where we can trade communication for performance where necessary to suit the limitations imposed by the system.
+In distributed systems the bandwidth available for communication between nodes varies widely. It is therefore desirable to develop algorithms where we can trade communication for performance where necessary to suit the limitations imposed by the system.
 
 \section{Current approaches}
 \label{sec:CurrentApproaches}
@@ -29,7 +29,7 @@ Gradient compression increses communcation efficiency by reducing the size of th
 Black-box optimization techniques benefit from a great avantage in terms of communiation efficiency as they only need to communicate a single scalar after each episode. This is because they consider the system as a pure input output process where the input is the policy parameters and the output is the discounted cumulative reward recieved. Using this they optimize directly in policy space.
 The Evolution Strategies (ES) \cite{ES} algorithm has show very strong results on a range of challenging reinforcement learning benchmarks such as Atari \cite{Atari} and MuJoCo \cite{MuJoCo}. It approximates a policy gradient by taking samples of the total reward achieved in trajectories with parameters perturbed around the current parameters. This is highly parallelizable due to the minimal communication bandwith used and lack of computationally expensive calculations such as calculcating gradients using backpropagation. It is also very versatile, being effective on both discrete and continuous problems, however, in environments where all agents often receive the same reward it can perform poorly with little exploration. 
 To address this NS-ES \cite{NS-ES} optimizes the novelty of the behaviours the agent exhibits, thus the system learns behaviours that are not like any seen in past iterations. Combining this with the goal of maximising reward NSR-ES weights the importance of optimizing reward and optimizing novelty leading to an agent which is less likely to get stuck in local optima. Finally NSRA-ES uses an adaptive scheme to weight novelty and reward meaning the agent achieves very impressive rewards while also avoiding local minima.
-ES exhibits poor data efficiency as it discards large batches of reward samples immediately after use. In response to this IW-ES \cite{IWES} reuses old reward samples through importance weighting. This leads to an acceleration of learning, however, with large learning weights the algorithm can become unstable.
+ES exhibits poor data efficiency as it discards large batches of reward samples immediately after use. In response to this IW-ES \cite{IWES} reuses old reward samples through importance weighting. This leads to an acceleration of learning, however, with large learning rates the algorithm can become unstable.
 
 
 
@@ -45,11 +45,13 @@ This architecture is shown in figure \ref{fig:Architecture}
 \end{figure}
 Specifically we consider environments in which the task is episodic, meaning the agent will eventually reach a terminal state, however, when this occurs is unknown.
 To evaluate how well a specific algorithm solves this problem we define metrics based on the quality of learning and the amount of communication exhibited during training.
-We use these metrics to compare algorithms from section \ref{sec:CurrentApproaches} in a longitudinal study spanning multiple environments. We also perform a qualitative analysis of each of the algorithms highlighting thier particular strenghts and discussing what can be done to address their weaknesses.
+We use these metrics to compare algorithms from section \ref{sec:CurrentApproaches} in a longitudinal study spanning multiple environments. 
+% We also perform a qualitative analysis of each of the algorithms highlighting thier particular strenghts and discussing what can be done to address their weaknesses.
 
 As well as this analysis, in section \ref{sec:GeneralScheme}, we propose a new general adjustable probibalistic communications scheme for ES, one of the most promising algorithms, and discuss the reasoning behind it. We then demonstrate in section \ref{sec:NaiveScheme} how a number of assumptions can be made to make the scheme implementable in what we refer to as the naive scheme.
 
 Finally we conduct experiments to compare this naive scheme with the original communication scheme and analyse the effect of varying its parameters. As well as this we look into how well the assumptions made by the naive scheme hold.
 
 We show that the evolution strategies algorithm with probabilistic communication (ESPC) has strong performance compared to ES, often achieving higher rewards while only communicating a fraction of the amount. We theorize that this is due to the bias it exhibits towards higher rewards causing ESPC to explore promising areas of parameter space more quickly that ES.
-As well as this we explore how varying ESPC's adjustable communication parameter affects its performance. We find that ESPC performs better with more communication. Finally we analyse how parameterizing the distribution we use to choose which samples are communicated affects the performance of ES. Specifically in the case of using a rolling mean and variance for this purpose we find that a shorter horizon provides a boost to performance.
+As well as this we explore how varying ESPC's adjustable communication parameter affects its performance. We find that ESPC performs better with more communication. Finally we analyse how parameterizing the distribution we use to choose which samples are communicated affects the performance of ES. Specifically in the case of using a rolling mean and variance for this purpose.
+%  we find that a shorter horizon provides a boost to performance.
