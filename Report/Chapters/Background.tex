@@ -6,10 +6,11 @@ Reinforcement learning (RL) is a subfield of machine learning that focuses on de
 
 In RL, an agent learns by receiving feedback in the form of rewards or punishments for each action taken in the environment. The agent interacts with the environment through a series of discrete time steps. At each time step, the agent observes the current state of the environment and chooses an action based on its current policy. The environment then transitions to a new state and provides the agent with a reward based on the chosen action and the new state. The agent updates its policy based on the reward signal, with the goal of maximizing expected cumulative discounted reward over time.
 
-Formally, the problem of RL can be modeled as a Markov decision process (MDP), which can be described by the 5-tuple $\mathcal{M} = (\mathcal{S}, \mathcal{A}, \mathcal{P}, R,\gamma)$ where $\mathcal{S}$ is the state space, $\mathcal{A}$ is the action space, $\mathcal{P}$ is a set of action-dependent Markov transition kernels, $R: \mathcal{S} \rightarrow \mathbb{R}$ is a reward function and $\gamma \in [0,1]$ is the discount factor.
-The actions an agent takes are determined by its policy $\pi: \mathcal{S} \rightarrow \mathcal{A}$. The policy can be alternatively defined as a distribution over actions $a \sim \pi(s)$. This can be advantagious as a non-deterministic policy can lead to greater exploration and can more easily avoid local optima. However, this leads to complications in mathematical analysis as expectations have to be taken over actions as well as states.
+Formally, the problem of RL can be modelled as a Markov decision process (MDP), which can be described by the 5-tuple $\mathcal{M} = (\mathcal{S}, \mathcal{A}, \mathcal{P}, R,\gamma)$ where $\mathcal{S}$ is the state space, $\mathcal{A}$ is the action space, $\mathcal{P}$ is a set of action-dependent Markov transition kernels, $R: \mathcal{S} \rightarrow \mathbb{R}$ is a reward function and $\gamma \in [0,1]$ is the discount factor.
+The actions an agent takes are determined by its policy $\pi: \mathcal{S} \rightarrow \mathcal{A}$. The policy can be alternatively defined as a distribution over actions $a \sim \pi(s)$. This can be advantageous as a non-deterministic policy can lead to greater exploration and can more easily avoid local optima. 
+% However, this leads to complications in mathematical analysis as expectations have to be taken over actions as well as states.
 
-We consider the episodic formulation of RL where the agent acts in the environement until it reaches some terminal state whereupon the episode ends.
+We consider the episodic formulation of RL where the agent acts in the environment until it reaches some terminal state whereupon the episode ends.
 In order to ensure episodes are of finite length we require a non-empty set of states $\Omega \subseteq \mathcal{S}$ such that a state $s \in \Omega$ is reached a final reward is issued and the episode terminates.
 We also require that every policy $\pi$ has a non-zero probability of reaching $\Omega$ at some point in the trajectory starting from every state.
 
@@ -19,11 +20,11 @@ The value of a particular policy in a particular state is defined as the  expect
         V^\pi(s) &= \mathbb{E} [ \sum_{t=0}^\infty \gamma^t R(s_t)|s_0=s] \\
         &= R(s_0) + \gamma \mathbb{E} [V^\pi(s_1)],
 \end{align*}
-where $s_t$ is the state at time $t$ starting from $s_0=s$ and folling policy $\pi$. The optimal value function is deinfined as that with the highest expected cumulative dicounted reward 
+where $s_t$ is the state at time $t$ starting from $s_0=s$ and following policy $\pi$. The optimal value function is defined as that with the highest expected cumulative discounted reward 
 \begin{equation*}
     V^*(s) = \max_\pi V^\pi(s),
 \end{equation*}
-which yeilds the optimal policy $\pi^*(s) = \arg \max_\pi V^\pi(s)$. 
+which yields the optimal policy $\pi^*(s) = \arg \max_\pi V^\pi(s)$. 
 We can find the optimal value function using value iteration by repeating the update
 \begin{equation*}
     V_t(s) \leftarrow \max_{a \in \mathcal{A}} R(s) + \mathbb{E} V_{t-1}(s'),
@@ -37,15 +38,15 @@ It is common to come across environments where the state space is too large to u
 \end{equation*}
 where $\boldsymbol{\theta}$ is the parameter vector and $\boldsymbol{\phi}(s)$ is a feature vector for state s. It is also common to use a neural network for this purpose.
 
-To estimate the expected value of the state we need the transition probabilities between all states $p(s'|s,a), \ \forall s,s' \in \mathcal{S}, \ \forall a \in \mathcal{A}$. In practice we often do not have an accurate model of the environment so these are not known. We can instead use an action value function defined as 
+To estimate the expected value of the state we need the transition probabilities between all states $p(s'|s,a), \ \forall s,s' \in \mathcal{S}, \ \forall a \in \mathcal{A}$. In practice, we often do not have an accurate model of the environment, so these are not known. We can instead use an action value function defined as 
 \begin{equation*}
     Q_\pi(s,a) = \mathbb{E} [ \sum_{t=0}^\infty \gamma^t R(s_t)|s_0=s, a_1=a].
 \end{equation*}
-With this we can use Q-learning to approximate the optimal action value function with no direct model of the environment and from the action value function we can approximate the optimal policy. The Q-learing iteration given sample $(s,a,r,s')$ is 
+With this we can use Q-learning to approximate the optimal action value function with no direct model of the environment and from the action value function we can approximate the optimal policy. The Q-learning iteration given sample $(s,a,r,s')$ is 
 \begin{equation*}
-    Q^{new}(s,a) \leftarrow Q^{old}(s,a) + \alpha (R(s) + \max_{a'} Q(s',a')),
+    Q^{new}(s,a) \leftarrow Q^{old}(s,a) + \alpha_t (R(s) + \max_{a'} Q(s',a')),
 \end{equation*} 
-where $\alpha$ is the learning rate. This is not guaranteed to converge but often does in practice.
+where $\alpha$ is the learning rate. This is guaranteed to converge under the assumptions that the sum of the learning rates $\alpha_t$ diverge, the sum of their squares converge and each state-action pair is visited infinitely often \cite{QLearning}.
 
 Alternatively to optimizing in value space we can optimize in policy space directly. One method for this is policy iteration where on each step we calculate the value function for the current policy then update the policy with 
 \begin{equation*}
@@ -56,7 +57,7 @@ We define the objective function as the discounted expected cumulative reward fr
 \begin{equation*}
     J^\theta(s) = \mathbb{E} [ \sum_{t=0}^\infty \gamma^t R(s_t)|s_0=s] = V^{\pi_\theta}(s)
 \end{equation*}
-Since the policy is now parameterized we can take its gradient with respect to some objective function and perform gradient ascent to optimize it. A well know algorithm for this is REINFOCE \cite{REINFORCE} shown in algorithm \ref{alg:REINFORCE}.
+Since the policy is now parameterized we can take its gradient with respect to some objective function and perform gradient ascent to optimize it. A well-known algorithm for this is REINFORCE \cite{REINFORCE} shown in algorithm \ref{alg:REINFORCE}.
 
 \begin{algorithm}
     \caption{REINFORCE algorithm}\label{alg:REINFORCE}
@@ -95,7 +96,7 @@ Federated learning has several advantages over traditional centralized machine l
 
 \section{Distributed reinforcement learning}
 
-Distributed reinforcement learning (DRL) involves training an RL agent in a distributed manner across multiple machines, which may be physically separated, that work together to learn a single policy. DRL provides and advantage in large, complex environments or problems where single-agent RL might be too slow.
+Distributed reinforcement learning (DRL) involves training an RL agent in a distributed manner across multiple machines, which may be physically separated, that work together to learn a single policy. DRL provides an advantage in large, complex environments or problems where single-agent RL might be too slow.
 There exists two main paradigms of DRL: centralized training and decentralized execution (CTDE) and decentralized training and decentralized execution (DTDE).
 
 In CTDE, a central learner is trained on the experience communicated from the agents. All agents share the same state and action space and collect trajectories through acting in an environment. The central learner then updates a shared policy based on the communications it receives from agents. 
@@ -126,7 +127,7 @@ Also, since the whole trajectory is communicated at each step the size of the me
 Deep Q-learning is often used to address the performance issues where a neural network is used to approximate the Q function by estimating the value for each action in each state. This allows for use in larger, more complex environments. Data from a trajectory is used to approximate the gradient of the TD error with respect to the model parameters, allowing the use of gradient descent to minimize the error of the prediction. The model is often split into a prediction network, which approximates the value of the current state and a target network, which approximates the target from which we calculate the TD error.
 
 \subsection{Event based communication DQL}
-Event based communication distributed Q Learning (EBCDQL) \cite{EBCDQL} uses a communication scheme based on Event Triggered Control (ETC) techniques to reduce the communication of DQL while maintaining good learning performance.
+Event based communication distributed Q Learning (EBCDQL) \cite{EBCDQL} uses a communication scheme based on Event Triggered Control (ETC) \cite{ETC} techniques to reduce the communication of DQL while maintaining good learning performance.
 The algorithm works similarly to vanilla DQL, however, agents only communicate the samples that have a TD error above the threshold defined as 
 \begin{equation*}
     |\hat{\Delta}(u_i)| \geq \max(\rho L_i(t), \epsilon) 
@@ -154,12 +155,13 @@ In the central learner the gradient is updated by the mean of the transmitted gr
 
 \subsection{Evolution Strategies}
 Evolution Strategies (ES) \cite{ES} is a black-box optimization technique which approximates the policy gradient, or more specifically, the gradient of the expected cumulative discounted reward with respect to the parameters of a parameterized policy.
-The agents each run an episode with parameters, perturbed normally about the current parameters $\theta$, before communicating the cumulative discounted reward back to the central learner.
+The agents each run an episode with parameters, perturbed normally about the current parameters $\theta$, before communicating the scalar cumulative discounted reward back to the central learner.
 We can use the fact that
 \begin{equation*}
         \nabla_\theta \mathbb{E}_{\epsilon \sim N(0,I)}[F(\theta+\sigma \epsilon)] = \frac{1}{\sigma}\mathbb{E}_{\epsilon \sim N(0,I)}[F(\theta+\sigma \epsilon) \epsilon]
 \end{equation*}
-to calculate the approximate gradient by
+where $F(.)$ is the cumulative discounted reward for a given value of the parameters and $\sigma$, chosen as a hyperparameter, is the standard deviation of the normally distributed perturbations $\epsilon$.
+We calculate the approximate gradient by
 \begin{equation}
         \hat{\nabla}_\theta = \frac{1}{n\sigma}\sum^n_{i=1} F_i \epsilon_i.
         \label{eq:grad}
@@ -171,9 +173,9 @@ It is useful to note that since $\mathbb{E}_{\epsilon \sim N(0,I)}[F(\theta)\eps
 \end{equation*}
 from which we can see that ES is computing the finite difference estimate of the gradient in a random direction. This suggests that this method will scale poorly with the dimension of the parameters $\theta$. However, in experiments this effect is not observed, in fact larger neural networks tend to perform better. The authors hypothesize this is because larger networks have fewer local minima \cite{LocalMinima}.
 
-The main advantage of ES is its suitability for scalable parallelization. This is due to the minimal communication between agents and central learner as well as the absence of any backpropagation calculation. This means that ES can provide order of magnitude speed up in training time despite the poor data inefficiency it exhibits. It also benefits from the fact that it only uses a parameterized policy so is suitable for any size of problem including those with continuous state and action spaces, however, by discretizing actions ES exhibits better exploration performance on some environments.
+The main advantage of ES is its suitability for scalable parallelization. This is due to the minimal communication between agents and central learner as well as the absence of any backpropagation calculation. This means that ES can provide an order of magnitude speed up in training time. It also benefits from the fact that it only uses a parameterized policy so is suitable for any size of problem including those with continuous state and action spaces, however, by discretizing actions ES exhibits better exploration performance on some environments.
 
-ES performs excellently in terms of the size of the messages sent, communicating only a single scalar per agent. However, since this communication occurs after every episode, the performance in terms of number of messages sent is poor.
+ES performs excellently in terms of the size of the messages sent, communicating only a single scalar, the cumulative discounted reward for the episode, per agent. However, since this communication occurs after every episode, the performance in terms of number of messages sent is poor. It also exhibits poor data efficiency, only updating its parameters once from large batches of trajectories.
 
 % \subsection{Temporal difference learning with error feedback}
 

@@ -12,7 +12,7 @@ At the end of episode $k$ if some condition as a function of the current traject
 The central learner then updates the policy based on the information received and communicates this back to the agents. 
 The event loop can be seen in algorithm \ref{alg:EventLoop}.
 
-
+\section{Metrics}
 To evaluate the quality of DRL algorithms we establish metrics which can be used to compare them directly. These metrics broadly cover how well the systems learn and how much they communicate. In terms of communication we exclusively focus on messages sent from the agents to the central learner as in our problem the communication from central learner to agents is fixed. To evaluate how well an agent learns we can average the total reward achieved each episode across agents then plot the cumulative average total reward (CATR) againts episode number. The CATR as a function of episode number is 
 \begin{equation*}
     \text{CATR}(k) = \sum_{l=1}^k \frac{1}{n} \sum_{i=1}^n \sum_{t} r^l_i(t)
@@ -50,6 +50,15 @@ We say algorithm $a$ communicates less intensely than algorithm $b$ if $CASM_a(N
         \end{algorithmic}
 \end{algorithm}
 
+\section{Comparison of existing algorithms}
+
+\subsection{Experiments}
+We did experiments
+\subsection{Computational setup}
+We did code
+\subsection{Results}
+There was results
+
 \section{New algorithm}
 \subsection{Process for calculating the gradient}
 When calculating the gradient using evolutionary strategies we first take $n$ independent samples from a normal distribution by which we perturb the parameters $\theta$ of each agent $\epsilon_i \leftarrow \mathcal{N}(0,I), \ \forall i=1,\dots,n$. Then using these samples each agent runs an episode, sampling the cumulative discounted reward for each perturbation, $F_i \leftarrow \mathcal{F}(\theta+\sigma \epsilon_i), \ \forall i=1,\dots,n$ where $\mathcal{F}$ is some unknown distribution defined by the environment. Note that since the samples $(\epsilon_1,\dots\epsilon_n)$ and independent and identically distributed (iid) and sample $F_i$ is conditional on $\epsilon_i$ then the samples $(F_1,\dots,F_n)$ are also (iid). These samples are then communicated to the central learner and the approximate policy gradient is calculated as in equation \ref{eq:grad}.
@@ -59,7 +68,7 @@ We are interested in finding a scheme that reduces the number of samples that ar
 \subsection{General Communication Scheme}
 \label{sec:GeneralScheme}
 To construct a communication scheme of this nature we must first specify some expected number of agents $m$ that we wish to communicate each episode.
-We then define a deterministic utility function $U: S_\epsilon \times S_F \rightarrow \mathbb{R}$ where $S_\epsilon$ and $S_F$ are the sample spaces of the distributions from which the samples $\epsilon_i$ and $F_i$ are respectively drawn.
+We then define a deterministic utility function $U: \mathbb{R}^{q} \times S_F \rightarrow \mathbb{R}$ where $q$ is the number of parameters and $S_F$ is the sample space of the distribution from which the samples $F_i$ are drawn.
 Since $U$ is a function of random variables, it is itself a random variable with its own marginal distribution. 
 However, since the distribution $\mathcal{F}$ is unknown then the distribution $\mathcal{U}$ of $U$ is also unknown. 
 We therefore assume some distribution of $U$ based on information the agent knows. 
@@ -86,7 +95,8 @@ To calculate the gradient we use a sum of perturbation vectors weighted by the r
 \begin{equation*}
     \sum^n_{i=1} F_i \|\epsilon_i\|_2 \hat{\epsilon}_i = \sum^n_{i=1} w_i \hat{\epsilon}_i.
 \end{equation*}
-Since the directions $\hat{\epsilon}_i$ are uniformly distributed on a hypersphere \cite{UnfiormProof} and each agent does not know what the others are, this direction $\hat{\epsilon_i}$ is not useful for an agent in determining how much a vector will contribute to the sum. We are therefore left with only useful factor being the magnitude, naturally leading to the utility function
+where $\hat{\epsilon_i} = \frac{\epsilon_i}{\|\epsilon_i\|_2}$ is a unit vector in the direction of $\epsilon_i$.
+Since the directions $\hat{\epsilon}_i$ are uniformly distributed on a hypersphere \cite{UnfiormProof} and each agent does not know what the others are, this direction $\hat{\epsilon_i}$ is not useful for an agent in determining how much a vector will contribute to the sum. We are therefore left with only useful factor in approximating the direction of the sum being the magnitude of individual samples, naturally leading to the utility function
 \begin{equation*}
     U(F,\epsilon) = F \|\epsilon\|_2,
 \end{equation*}
@@ -121,12 +131,11 @@ which can be easily calculated by the agent.
 
 To be able to implement the general communication scheme we must assume some distribution of utility. This will allow us to calculate the probability that an agent's sample has higher utility than another and thus how likely it is to be communicated. The distribution of utility $\mathcal{U}$ is dependent on both the distribution of perturbation $\mathcal{N}(0,I)$ and reward $\mathcal{F}(\theta +\sigma \epsilon)$. The distribution of reward is unknown, but we know is that it is conditional on the distribution of perturbation which is Gaussian. This gives us motivation to naively assume that utility is also distributed normally. To parameterize this normal distribution we can use a rolling mean and variance of the last $k$ utility samples taken by an agent. Thus, we assume $\mathcal{U} = \mathcal{N}(\bar{u}_k, u^{\sigma^2}_k)$ where $\bar{u}_k = \frac{1}{k} \sum_{t=T-k+1}^T u^t$, $u^{\sigma^2}_k = \frac{1}{k}\sum_{t=T-k+1}^T (u^t - \bar{u}_k)^2$ and $T$ is the current time step. Alternatively to this we could take a weighted average of utilities weighting recent ones more highly.
 
-
-\section{Experiments}
+\subsection{Computational setup}
 % We conducted experiements to compare a number of algorithms on a number of different environments as well as directly comparing ES with the original communication scheme with the proposed probabilistic scheme. In the direct comparisons we used the Frozen Lake environment from Gymnasium (formerly OpenAI Gym \cite{Gym}) environment CartPole and a third party environment Flappy Bird. To run these experiements easily we developed a framework so that we could rapidly swap out algorithms, evironments and the number of agents being tested. All experiments were run five times and the results presented are a mean over all 5 runs. 
 
 \subsection{Algorithm comparison}
-To gain an understanding performance of ESPC we compared it to the DQL, EBCDQL, DAVIA and ES algorithms in the Frozen Lake environment from Gymnasium (formerly OpenAI's Gym \cite{Gym}) as well as the custom environment Windy Grid. Frozen lake (figure \ref{fig:FrozenLake}) is a 5x5 Grid environmnet in which the goal is to move from the upper left to the lower right square upon which the agent recives a reward of $1$. A number of squares in the grid are holes in the lake, where if reached by the agent the episode ends. 
+To gain an understanding performance of ESPC we compared it to the DQL, EBCDQL, DAVIA and ES algorithms in the Frozen Lake environment from Gymnasium (formerly OpenAI's Gym \cite{Gym}) as well as the custom environment Windy Grid. Frozen lake (figure \ref{fig:FrozenLake}) is a 5x5 Grid environment in which the goal is to move from the upper left to the lower right square upon which the agent receives a reward of $1$. A number of squares in the grid are holes in the lake, where if reached by the agent the episode ends. 
 
 \begin{figure}
     \centering
@@ -186,7 +195,7 @@ Due to having very limited amounts of computation at our disposal we were not ab
 
 \section{Results and Discussion}
 
-\subsection{Algorithm comparison}
+\subsection{Comparison with existing algorithms}
 
 Relative to the value based algorithms (DQL, EBCDQL, DAVIA) on Windy Grid ES and ESPC performed poorly in terms of quality of learning. Figure \ref{fig:AlgsWG} shows that they both fail to learn an effective strategy taking over 100 steps on average to reach the goal, ten times more than DAVIA took on average. They performed better on the Frozen Lake environment shown in figure \ref{fig:AlgsFL}. However, all algorithms failed to find a consistent strategy to reach the goal. The communication performance of ESPC better than all algorithms except DAVIA on both the number of messages sent and the cumulative size of those messages. 
 
