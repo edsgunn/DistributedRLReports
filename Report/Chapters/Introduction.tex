@@ -35,25 +35,26 @@ ES exhibits poor data efficiency as it discards large batches of reward samples 
 
 \section{Approach}
 The problem this project considers is that of a number of distributed agents acting in parallel instances of the same environment where they can communicate with a central learner to jointly solve a reinforcement learning problem. 
-This architecture is shown in figure \ref{fig:Architecture}
-
+This architecture is shown in figure \ref{fig:Architecture}.
 \begin{figure}
     \centering
     \includegraphics[width=0.6\columnwidth]{Figures/Architecture.png}
     \caption{The distributed reinforcement architecture used for this project. Agents interact with a single environment taking actions and receiving an observation of the next state and a reward back. Agents also interact with the central learner sending messages and receiving updated model parameters.}
     \label{fig:Architecture}
 \end{figure}
-% Specifically we consider environments in which the task is episodic, meaning the agent will eventually reach a terminal state, however, when this occurs is unknown.
-To evaluate how well a specific algorithm solves this problem we define metrics based on the quality of learning and the amount of communication exhibited during training.
-I use these metrics to compare algorithms from section \ref{sec:CurrentApproaches} in a longitudinal study spanning multiple environments. 
-% I also perform a qualitative analysis of each of the algorithms highlighting thier particular strenghts and discussing what can be done to address their weaknesses.
+% Specifically I consider environments in which the task is episodic, meaning the agent will eventually reach a terminal state, however, when this occurs is unknown.
+There are two main objectives of this project, the first is to explore methods for communication efficient distributed reinforcement learning and compare them in simulation analysing their respective communication efficiency. The second is to develop a new algorithm for making distributed learning more efficient.
+To evaluate how well a specific algorithm performs in section \ref{sec:Metrics} I define metrics based on the quality of learning and the amount of communication exhibited during training.
 
-As well as this analysis, in section \ref{sec:GeneralScheme}, we propose a new general adjustable probabilistic communications scheme for ES, one of the most promising algorithms, and discuss the reasoning behind it. I then demonstrate in section \ref{sec:NaiveScheme} how a number of assumptions can be made to make the scheme implementable.
-Finally, we conduct experiments to compare this scheme with the original communication scheme and analyse the effect of varying its parameters. 
-% As well as this we look into how well the assumptions made by the naive scheme hold.
 
 \section{Contributions}
 
+I use the metrics defined in section \ref{sec:Metrics} to compare algorithms from section \ref{sec:CurrentApproaches} in a longitudinal study spanning multiple environments. 
+I also perform a qualitative analysis of each of the algorithms highlighting their particular strengths and discussing what can be done to address their weaknesses.
+As well as this analysis, in section \ref{sec:GeneralScheme}, I propose a new general adjustable probabilistic communications scheme for ES, one of the most promising algorithms, and discuss the reasoning behind it. I then demonstrate in section \ref{sec:GaussianScheme} how a number of assumptions can be made to make the scheme implementable.
+Using this assumption, I show that if it were correct the expected number of agents communicating each episode is $m$ out of $n$.
+Finally, I conduct experiments to compare this scheme with the original communication scheme and analyse the effect of varying its parameters. 
+% As well as this I look into how well the assumptions made by the Gaussian scheme hold.
+
 I show that the evolution strategies algorithm with probabilistic communication (ESPC) has strong performance compared to ES, often achieving higher rewards while only communicating a fraction of the amount. I theorize that this is due to the bias it exhibits towards higher rewards causing ESPC to explore promising areas of parameter space more quickly that ES.
-As well as this we explore how varying ESPC's adjustable communication parameter affects its performance. I find that ESPC performs better with more communication. Finally we analyse how parameterizing the distribution we use to choose which samples are communicated affects the performance of ES. Specifically in the case of using a rolling mean and variance for this purpose.
-%  we find that a shorter horizon provides a boost to performance.
+As well as this I explore how varying ESPC's adjustable communication parameter affects its performance. I find that ESPC performs better with more communication and investigate unexpected communication behaviours at the beginning of training. Finally, I analyse how parameterizing the distribution I use to choose which samples are communicated affects the performance of ES. Specifically in the case of using a rolling mean and variance for this purpose I show that the horizon used for this has little effect on learning performance but causes a communication burn in period proportional to the length of the horizon.
