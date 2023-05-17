@@ -1,0 +1,434 @@
+\chapter{Algorithm Proposal and Evaluation}
+\section{Principle behind the new algorithm}
+When calculating the gradient using evolutionary strategies we first take $n$ independent samples from a normal distribution by which we perturb the parameters $\theta$ of each agent $\epsilon_i \leftarrow \mathcal{N}(0,I), \ \forall i=1,\dots,n$. Then using these samples each agent runs an episode, sampling the cumulative discounted reward for each perturbation, $F_i \leftarrow \mathcal{F}(\theta+\sigma \epsilon_i), \ \forall i=1,\dots,n$ where $\mathcal{F}$ is some unknown distribution defined by the environment. Note that since the samples $(\epsilon_1,\dots\epsilon_n)$ and independent and identically distributed (iid) and as sample $F_i$ is conditional on $\epsilon_i$ then the samples $(F_1,\dots,F_n)$ are also iid. These samples are then communicated from every agent to the central learner after every episode and the approximate policy gradient is calculated as in equation \ref{eq:grad}.
+
+We are interested in finding a scheme that reduces the number of samples that are communicated after each episode. A possible approach to achieve this is for only $m$ out of $n$ agents to communicate or equivalently $n-m$ out of $n$ agents to not communicate each episode on average. To do this we introduce the notion of the utility of a sample in calculating the final gradient, meaning how important is this particular sample relative to the others. Difficulty in determining this arises as a particular agent $i$ only knows the values of its own sample pair $(\epsilon_i, F_i)$. However, since the samples are iid, if we assume some distribution over the utility of the samples, it is possible to estimate the probability that the sample we have drawn is greater than that of at least $n-m$ out of $n-1$ other samples i.e., it is more useful in calculating the gradient than at least $n-m$ out of $n-1$ other samples. We can then communicate the sample with this probability.
+
+\section{General Communication Scheme}
+\label{sec:GeneralScheme}
+To construct a communication scheme of this nature we must first specify some expected number of agents $m$ that we wish to communicate each episode.
+We then define a deterministic utility function $U: \mathbb{R}^{q} \times S_F \rightarrow \mathbb{R}$ where $q$ is the number of parameters and $S_F$ is the sample space of the distribution from which the samples $F_i$ are drawn.
+Since $U$ is a function of random variables, it is itself a random variable with its own marginal distribution. 
+However, since the distribution $\mathcal{F}$ is unknown then the distribution $\mathcal{U}$ of $U$ is also unknown. 
+We therefore assume some distribution of $U$ based on information the agent knows. 
+This includes all historical values for utility the agent has experienced.
+The procedure for determining whether a sample is communicated is then as follows
+\begin{enumerate}
+    \item Draw sample $\epsilon \leftarrow \mathcal{N}(0,I)$
+    \item Draw sample $F \leftarrow \mathcal{F}(\theta + \sigma \epsilon)$
+    \item Calculate $u = U(\epsilon,F)$
+    \item Use assumed distribution $\mu \sim \mathcal{U}$ to calculate $p=\mathbb{P}(\mu < u)$
+    \item Calculate $p_{comm}=\mathbb{P}(M \geq n-m) = \sum_{k=n-m}^{n-1} \begin{pmatrix}n-1 \\ k\end{pmatrix}p^k(1-p)^{n-k-1}$, where $M \sim \text{Bi}(n-1,p)$
+    \item Generate a random number $\delta \leftarrow \text{Uniform}(0,1)$
+    \item If $\delta<p_{comm}$ communicate $F$ to the central learner
+\end{enumerate}
+
+\section{Determining the utility function}
+\label{sec:Utility}
+By discarding samples we will inevitably introduce some form of bias in the approximate policy gradient that we calculate. 
+However, by careful choice of the utility function we can attempt to minimize the impact of this bias on the gradient ascent process.
+When performing gradient ascent introducing bias in the direction will be more impactful than if we introduce bias to the magnitude. 
+It is much worse to go in completely the wrong direction than it is to step too far or not far enough in the right one. 
+This is highlighted by the popularity of normalized gradient decent/ascent \cite{NGD} in which the magnitude is discarded, entirely replaced by the manually assigned learning rate.
+To calculate the gradient we use a sum of perturbation vectors weighted by the rewards they receive. We can alternatively think of this as a weighted sum of direction vectors.
+
+\begin{equation*}
+    \sum^n_{i=1} F_i \|\epsilon_i\|_2 \hat{\epsilon}_i = \sum^n_{i=1} w_i \hat{\epsilon}_i.
+\end{equation*}
+where $\hat{\epsilon_i} = \frac{\epsilon_i}{\|\epsilon_i\|_2}$ is a unit vector in the direction of $\epsilon_i$.
+Since the directions $\hat{\epsilon}_i$ are uniformly distributed on a hypersphere \cite{UnfiormProof} and each agent does not know what the others are, this direction $\hat{\epsilon_i}$ is not useful for an agent in determining how much a vector will contribute to the sum. We are therefore left with only useful factor in approximating the direction of the sum being the magnitude of individual samples, naturally leading to the utility function
+\begin{equation*}
+    U(F,\epsilon) = F \|\epsilon\|_2,
+\end{equation*}
+which can be easily calculated by the agent.
+
+% \subsection{Utility as an optimisation problem}
+% Maximise the expected value of c?
+% \subsection{To be discarded if nothing can be proven}
+% If we imagine an additional sample $c_i \in \{0,1\}$ for each sample pair $(\epsilon_i, F_i)$ where $\mathbb{P}(c=1)=p$ we can represent the vector part of gradient that we calculate as $\sum_{i=1}^n c_i F_i \epsilon_i$. We would like to minimise the direction between this vector and the vector we would have had if we were to communicate all samples $\sum_{i=1}^n F_i \epsilon_i$. This is equivalent to saying that we would like to maximise the expected normalised dot product of those two sums with respect to the function $U$ as the  normalised dot product is proportional to the cosine of the angle between the vectors.
+
+
+% We can frame this as an unconstrained functional optimization problem over $U(J,\epsilon)$
+
+% \begin{align*}
+%     \max_U \  &\mathbb{E} \begin{bmatrix}\frac{(\sum_{i=1}^n c_i F_i \epsilon_i)^\top(\sum_{j=1}^n F_j \epsilon_j)}{ \|\sum_{i=1}^n c_i F_i \epsilon_i\|_2 \|\sum_{j=1}^n F_j \epsilon_j\|_2 } \end{bmatrix}\\
+%     \text{with} &  \\
+%     &\epsilon_i \sim \mathcal{N}(0,I), \forall i=1,\dots,m \\
+%     & F_i \sim \mathcal{F}(\theta + \sigma \epsilon_i) \\
+%     & u_i = U(\epsilon_i, F_i) \Rightarrow u_i \sim \mathcal{U}(\epsilon_i ,F_i)\\
+%     & s_i = \mathbb{P}(\mathbb{E}[uj < u_i | u_i) \\
+%     & t_i \sim \text{Bi}(n,s_i) \\
+%     & c_i \sim \text{B}(\mathbb{P}(t_i \geq n-m))
+% \end{align*}
+% where the objective function is the expected cosine of the angle between the approximate policy gradient with and without the probibalistic communication scheme. It can be transformed to
+
+% \begin{equation*}
+%     \sum_{i=1}^n \sum_{j=1}^n \sum_{k=1}^n \sum_{l=n-m}^n \mathbb{E} [ \begin{pmatrix}m \\ k\end{pmatrix} s(U(\epsilon,F))^k(1-s(U(\epsilon,F)))^{m-k} F_i F_j \epsilon_{i,k} \epsilon_{j,k}] 
+% \end{equation*}
+
+\section{Approximating the utility function as a Gaussian random variable}
+\label{sec:GaussianScheme}
+
+To be able to implement the general communication scheme we must assume some distribution of utility. This will allow us to calculate the probability that an agent's sample has higher utility than another and thus how likely it is to be communicated. The distribution of utility $\mathcal{U}$ is dependent on both the distribution of perturbation $\mathcal{N}(0,I)$ and reward $\mathcal{F}(\theta +\sigma \epsilon)$. The distribution of reward is unknown, but we know is that it is conditional on the distribution of perturbation which is Gaussian. This gives us motivation to naively assume that utility is also distributed normally. To parameterize this normal distribution we can use a rolling mean and variance of the last $k$ utility samples taken by an agent. Where $k$ is a hyperparameter to be specified. Thus, we assume $\mathcal{U} = \mathcal{N}(\bar{u}_k, u^{\sigma^2}_k)$ where $\bar{u}_k = \frac{1}{k} \sum_{t=T-k+1}^T u^t$, $u^{\sigma^2}_k = \frac{1}{k}\sum_{t=T-k+1}^T (u^t - \bar{u}_k)^2$ and $T$ is the current time step. Alternatively to this we could take a weighted average of utilities weighting recent ones more highly. We refer to ES using this communication scheme as evolution strategies with probabilistic communication or ESPC.
+
+We now show that given the assumption of Gaussian distributed utility, the expected probability of communication is approximately $\frac{m}{n}$. The probability of communication $p_{comm}$ is a direct function of the utility $U$. Therefore, the expectation of $p_{comm}$ is
+
+\begin{equation*}
+    \mathbb{E} \left[ p_{comm}\right] = \int_{-\infty}^\infty p_{comm}(z) \, dz
+\end{equation*}
+where
+\begin{equation*}
+    p_{comm} = \sum_{k=n-m}^{n-1} \begin{pmatrix}n-1 \\ k\end{pmatrix}p^k(1-p)^{n-k-1}
+\end{equation*}
+and 
+\begin{equation*}
+    p = \int_0^z \frac{1}{\sqrt{2 \pi}} \exp(-\frac{x^2}{2}) \, dx
+\end{equation*}
+where $z=\frac{u-\bar{u}_k}{u_k^{\sigma^2}}$.
+We can calculate this expectation using Monte Carlo integration. We sample values of $z$ from the standard normal distribution and calculate $p_{comm}(z)$ for each sample. Take the mean of these samples gives an approximation of the integral. Figure \ref{fig:ExpComm} shows the expected communication across values of $m$ with $n=50$. We can see that $p_{comm}$ is practically equal to $\frac{m}{n}$ for all values of $m$ with mean squared error on the order of $10^{-6}$ for 100,000 samples.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{Figures/expected_communication.png}
+    \caption{The expected probability of communication for different values of $m$ with $n=50$. The red dotted line shows the value of $\frac{m}{n}$ and the blue line shows the result of the Monte Carlo integration.}
+    \label{fig:ExpComm}
+\end{figure}
+
+
+\section{Computational setup}
+% We conducted experiements to compare a number of algorithms on a number of different environments as well as directly comparing ES with the original communication scheme with the proposed probabilistic scheme. In the direct comparisons we used the Frozen Lake environment from Gymnasium (formerly OpenAI Gym \cite{Gym}) environment CartPole and a third party environment Flappy Bird. To run these experiements easily we developed a framework so that we could rapidly swap out algorithms, evironments and the number of agents being tested. All experiments were run five times and the results presented are a mean over all 5 runs.
+Running experiments on more complex environments and with larger numbers of agents using the framework developed in \ref{sec:AlgComp} proved infeasibly slow as it was largely implemented in native python. As well as this the data structure used record results produced very large file sizes meaning they took a long time to process and used up a significant proportion of the storage available. Therefore, for the ESPC, ES comparisons I improved my approach to experiments by taking advantage of libraries to speed up training. The main benefit came from moving from many instances of a single environment to Gymnasium vectorized environments. This allowed us to pass a vector of actions to the environment and for the environment updates to be carried out asynchronously in parallel, resulting in a significant improvement of performance. As well as this I used JAX \cite{JAX} just in time compilation to accelerate the neural network responsible for policy calculations. I addressed the issue experiment file sizes by recording only the data needed to satisfy the metrics established in section \ref{sec:Metrics}. This significantly reduced the storage requirements, however, it also meant results were less flexible in analysis and harder to debug.
+
+Even with the improved experiment setup, due to having very limited amounts of computation at my disposal I was not able to conduct experiments of the scale I desired. Ideally for an algorithm like ES I would use a number of agents at least an order of magnitude higher and train on an order of magnitude more episodes, meaning I would be able to compare with ESPC on the complex environment such as the more harder environments in the MuJoCo \cite{MuJoCo} and Atari \cite{Atari} suits that ES proved particularly effective on. Comparison would also have benefitted from the use of larger models such as CNNs for use on the Atari suit. However, I still feel the experiments that were conducted give an accurate picture of the performance of EPSC compared to ES and hope for future work to test in more complex environments.
+
+\section{Comparison with existing algorithms}
+To gain an understanding performance of ESPC, I compared it to the DQL, EBCDQL, DAVIA and ES algorithms in the Frozen Lake environment from Gymnasium as well as the custom environment Windy Grid.
+
+Windy Grid is a 5x5 gridworld where the objective is for the agent to move from the upper left square to the lower right. The agent receives $-1$ reward every step except the final step in which it receives a reward of $0$. The agent can move left, right, up, down or stay in the same place. At each step there is a $30\%$ chance of being independently pushed one square in the directions up and/or left in addition to the movement from the action taken. For the ES and ESPC policy I used a feedforward neural network with 2 hidden layers of size 4 as well as a momentum optimizer.
+I carried out training with $n=30$ agents over 1000 episodes and repeated the trial 5 times averaging the results over the trials. 
+
+Relative to the value based algorithms (DQL, EBCDQL, DAVIA) on Windy Grid ES and ESPC performed poorly in terms of quality of learning. Figure \ref{fig:AlgsWG} shows that they both fail to learn an effective strategy achieving the near minimum reward on every episode. They performed better on the Frozen Lake environment shown in figure \ref{fig:AlgsFL}. However, all algorithms failed to find a consistent strategy to reach the goal. The size and frequency of messages sent by ESPC in Windy Grid were lower than all algorithms except DAVIA. On Frozen Lake, since both DAVIA and EBCDQL communicated minimally ESPC was outperformed.
+
+ES has showed strong performance in the past on much more complex environments than those tested here, and on which it is not feasible to run the other algorithms in their implemented state. The reason that ES and ESPC fail to learn effectively on these environments is due the rewards for all agents often being the same. Meaning the expected update to the parameters is zero. In the case of Windy Grid there will likely be some random update to the parameters as they will receive a negative reward. However, for Frozen Lake the update will often be zero as there is no reward until the terminal is reached.
+A potential remedy to this is to use novelty to encourage exploration as suggested in section \cite{NS-ES} and discussed in \ref{sec:CurrentApproaches}.
+Alternatively virtual batch normalization as discussed in \cite{VBN} could be introduced to improve exploration.
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/AllAlg/30/WindyGrid_vec/episodic_reward.png}
+        \caption{The average episodic reward received by agents}
+        \label{fig:AlgsWGReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/AllAlg/30/WindyGrid_vec/num_messages.png}
+        \caption{The average number of messages sent from agents to central learner}
+        \label{fig:AlgsWGNumMessages}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/AllAlg/30/WindyGrid_vec/size_messages.png}
+        \caption{The average size of messages sent from agents to central learner}
+        \label{fig:AlgsWGSizeMessages}
+    \end{subfigure}
+    \caption{Results from the algorithm comparison in the Windy Grid environment for DAVIA, DQL, EBCDQL, ES, and ESPC with $n=30$ over 1000 episodes and 5 trials.}
+    \label{fig:AlgsWG}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/AllAlg/30/FrozenLake_vec/reward.png}
+        \caption{The cumulative average reward received by agents}
+        \label{fig:AlgsFLReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/AllAlg/30/FrozenLake_vec/num_messages.png}
+        \caption{The average number of messages sent from agents to central learner}
+        \label{fig:AlgsFLNumMessages}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/AllAlg/30/FrozenLake_vec/size_messages.png}
+        \caption{The average size of messages sent from agents to central learner}
+        \label{fig:AlgsFLSizeMessages}
+    \end{subfigure}
+    \caption{Results from the algorithm comparison in the Frozen Lake environment for DAVIA, DQL, EBCDQL, ES, and ESPC with $n=30$ over 1000 episodes and 5 trials.}
+    \label{fig:AlgsFL}
+\end{figure}
+
+
+
+\section{Comparison between ESPC and standard ES}
+EPSC is designed to reduce the communication between the agents and the central learner to an amount equivalent to that of ES with $m$ agents. 
+We are therefore interested in evaluating an instance of ESPC which has $n$ agents but communicates like it has $m$ against an instance of ES with $m$ agents. We note that this is equivalent to using $n$ agents with a fixed probability of communication of $\frac{m}{n}$ in the limit as $n \to \infty$.
+For ESPC to be effective it must learn better than ES with $m$ agents, otherwise it would show it is wasting computational resources for no benefit. 
+In the experiment I also include an instance of ES with $n$ agents as a benchmark for performance. 
+The bias ESPC introduces means the approximation of the policy gradient will likely not be as accurate as ES with $n$ agents.
+I therefore hypothesize that the performance of ESPC lies somewhere between that of ES with $n$ and $m$ agents.
+
+To test this hypothesis I conducted an experiment of this nature on the Gymnasium Cart Pole environment, and the MuJoCo Ant environment 
+% and third party Flappy Bird (figure \ref{fig:FlappyBird}) envrionment 
+using $n=50$ and $m=25$. I chose these environments as they are sufficiently complex, taking many iterations to converge to good solutions, meaning it is likely differences in performance across algorithms will be clear. They are also lightweight enough that it is computationally feasible to train agents on them with limited resources.
+The Cart Pole environment (figure \ref{fig:CartPole}) is a physics based environment in which the aim is to control a cart such that the pole stays as close to vertical as possible for a long as possible. 
+At each step the agent observes the cart position, the cart velocity, the pole angle, and the pole angular velocity. In response to this it can move left or right. 
+It receives a reward of 1 for every timestep for which the pole is within a threshold of the vertical. If the pole leaves this region then the episode terminates. Ant (figure \ref{fig:Ant}) is an environment from the MuJoCo suit where the goal is to control a four legged robot such that it walks forward\footnote{Details of the action, observation and reward structure can be found at \url{https://gymnasium.farama.org/environments/mujoco/ant/}}. 
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/cart_pole.png}
+        \caption{The Cart Pole environment}
+        \label{fig:CartPole}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ant.png}
+        \caption{The Ant environment}
+        \label{fig:Ant}
+    \end{subfigure}
+\end{figure}
+
+The experiments evaluate the average discounted reward ($\mu^{\text{reward}}$) and the average number of messages sent ($\mu^{\text{frequency}}$). The size of messages is not measured as, for both algorithms, it is a constant multiple of the number of messages sent.
+I used the Gaussian assumption of utility distribution stated in section \ref{sec:GaussianScheme} and set the rolling average parameter $k=5$. The policy for both ES and ESPC was a feedforward neural network with 2 hidden layers of size $8,64$. I used Adam optimizer \cite{Adam} with a learning rate of $\alpha=0.01,0.005$, an $L_2$ regularization coefficient of $0.005,0.005$, a perturbation standard deviation of $\sigma=0.05,0.02$ and a discount factors of $\gamma=1,0.99$ where the parameters are for the Cart Pole and Ant environments respectively and are the same for both algorithms. Training was carried out over 200 episodes and repeated in 10 and 3 trials respectively, averaging over the results from the trials.
+\label{sec:ESPCEval}
+
+EPSC performed well in terms of both quality of learning and communication when compared to ES. 
+Results on the cart pole environment are shown in figure \ref{fig:DirectCP}. For every episode in training after episode $50$ ESPC with $n=50$ achieves a higher $\mu^\text{reward}$ than that of ES with both $n=50$ and $n=25$ and sends a number of messages similar to ES with $n=25$. It can be seen in figure \ref{fig:CPEpisodicReward} that ESPC achieves significantly more episodic reward than ES with a continuing upward trend whereas ES is relatively stagnant at low levels of reward.
+
+The results on the Ant environment are shown in figure \ref{fig:DirectAnt} where ESPC achieved $\mu^\text{reward}$ greater than of ES with $n=50$ and $n=25$ for every episode in training and a $\mu^\text{frequency}$ in line with that of ES with $n=25$. After episode 125 we can see that the $\mu^\text{reward}$ for ESPC begins to gradually increase whereas for ES with $n=50$ it stays constant and ES with $n=25$ it drops.
+
+These results beat the expectation of a level of performance between the two ES instances. I theorize that this is due to greater exploration when using the probabilistic communication scheme as samples are biased towards higher rewards. It is also noticeable that ESPC exhibits a communication jump at the beginning of training, where communication converges to the expected amount of $m$ out of $n$ per episode, usually starting out significantly lower, this is further explored in the following sections.
+% The results on the flappy bird environment, figure \ref{fig:DirectFB}, show similar behaviour, however, in this case ES achieves a slightly lower cumulative reward, and by the end of training has a higher cumulaitve reward per episode than ES.
+\begin{figure}[H]
+    \centering
+    % \begin{subfigure}{0.4\textwidth}
+    %     \centering
+    %     \includegraphics[width=\textwidth]{Figures/ESPC/Direct_vec/CartPole/reward.png}
+    %     \caption{The cumulative average reward recieved by agents}
+    %     \label{fig:CPReward}
+    % \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Direct_vec_3/CartPole/episodic_reward.png}
+        \caption{The episodic average reward received by agents}
+        \label{fig:CPEpisodicReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Direct_vec_3/CartPole/num_messages.png}
+        \caption{The average number of messages sent from agents to central learner}
+        \label{fig:CPMessages}
+    \end{subfigure}
+    \caption{Results for the direct comparison of ES with $n=25,50$ and ESPC with $n=50$, $m=25$ and $k=5$ on the Cart Pole environment over 200 episodes and 20 trials.}
+    \label{fig:DirectCP}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    % \begin{subfigure}{0.4\textwidth}
+    %     \centering
+    %     \includegraphics[width=\textwidth]{Figures/ESPC/Direct_vec_2/Ant/reward.png}
+    %     \caption{The cumulative average reward recieved by agents}
+    %     \label{fig:AntReward}
+    % \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Direct_vec_3/Ant/episodic_reward.png}
+        \caption{The episodic average reward received by agents}
+        \label{fig:AntEpisodicReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Direct_vec_3/Ant/num_messages.png}
+        \caption{The average number of messages sent from agents to central learner}
+        \label{fig:AntMessages}
+    \end{subfigure}
+    \caption{Results for the direct comparison of ES with $n=25,50$ and ESPC with $n=50$, $m=25$ and $k=5$ on the Ant environment over 200 episodes and 3 trials}
+    \label{fig:DirectAnt}
+\end{figure}
+
+
+\section{Varying communication in ESPC}
+A key advantage of ESPC over ES is the ability to tune the expected amount of communication on each episode. However, reducing communication introduces bias to the estimate of the gradient and will thus affect the quality of learning achieved. I therefore conducted an experiment where I varied the parameter $m$ hypothesizing that quality of learning will decrease with the amount of communication.
+
+I used $n=50$, $m=5,15,30,45$ and the Gaussian assumption stated in section \ref{sec:GaussianScheme} with $k=10$. The experiment was conducted on Cart Pole and Ant. I included an instance of ES with $n=30$ as a benchmark for learning performance. The other details of the systems were the same as in section \ref{sec:ESPCEval}.
+
+The results achieved by varying the communication parameter $m$ on the Cart Pole environment are presented in figure \ref{fig:CPComm}. It can be seen that for all values of $m$ ESPC outperforms ES in terms of $\mu^{\text{reward}}$ with $\mu^{\text{frequency}}$ roughly equal to $m/n$ times that of ES per episode, this is approximately in line with the result from section \ref{sec:GaussianScheme}. Noticeably, the performance of lower values of $m$ is greater than higher values in every case, however, the smoothness of the curve decreases. For $m=5$ we can see fast but erratic increases in reward and for $m=45$ there is smoother and more gradual increases. This is likely due to fact that for low values of $m$ we are only taking into account the largest rewards meaning we take a large step in their direction in parameter space, and thus we get fast increases in reward. However, the direction of the steps is not consistently close to the true policy gradient meaning we often get rapid drops in reward as well. For high values of $m$ the policy gradient is more accurate, however, we are averaging over more, smaller samples so the stepsize will be smaller. This leads to the smoother optimization seen in the figure. Over all the instances ESPC with $m=15$ performs the best indicating that there may exist an optimal amount of communication to maximize learning. 
+
+Figure \ref{fig:AntComm} show the performance on the Ant environment. We can see for all values of $m$ apart from $m=5$, $\mu^{\text{reward}}$ is greater than that of ES for almost all episodes, however, for $m=5$ the performance drops catastrophically. This collapse in performance is likely due to approximation of the policy gradient being too crude due to the low number of samples used to calculate it and the bias introduced by the probabilistic communication scheme. 
+
+These results show that there may exist a communication threshold, at which the approximation of the gradient by ESPC becomes too poor leading to significant degradation in learning performance, however, above this threshold performance will often match or exceed that of ES. 
+As discussed in \cite{ES} and section \ref{sec:ES} due to the fact that ES is effectively computing randomized finite difference estimates of the policy gradient, it will scale poorly with the number intrinsic parameters in the optimization problem.
+In this environment the intrinsic dimension of the problem is larger than in the Cart Pole environment, so the approximation of the gradient with few samples will be much worse. This likely explains the presence of a performance collapse in Ant and not Cart Pole with the same number of samples.
+Further investigation is necessary to confirm this. Future work could focus on looking at this effect in greater detail as well as theoretically analysing the effect of varying the $m$ parameter.
+
+Additionally, we observe that the initial anomalous values of communication at the beginning of training are highly influenced by the value of $m$. This is because on the first episode we only have one utility sample, so the rolling mean is equal to the value of the sample. The variance is also zero but to avoid a division by zero error we set it to $1$ on the first episode. Therefore, the probability that a sample is greater than another is $0.5$. The probability of communication is thus only a function of $m$ and $n$ on the first episode, explaining the phenomenon observed. A plot of the probability of communication on the first episode as a function of $m$ with $n=50$ is shown in figure \ref{fig:EP1Comm} we can see communication is rapidly pushed to the extremes away from $0.5$ as $m$ varies around $m=25$.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{Figures/first_episode_comm.png}
+    \caption{The probability of communication on the first episode with $n=50$ for different values of $m$.}
+    \label{fig:EP1Comm}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    % \begin{subfigure}{0.4\textwidth}
+    %     \centering
+    %     \includegraphics[width=\textwidth]{Figures/ESPC/Comm_vec/CartPole/reward.png}
+    %     \caption{The cumulative average reward received by agents}
+    %     \label{fig:CommReward}
+    % \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Comm_vec_3/CartPole/episodic_reward.png}
+        \caption{The episodic average reward received by agents}
+        \label{fig:CommEpisodicReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Comm_vec_3/CartPole/num_messages.png}
+        \caption{The average number of messages sent from agents to central learner}
+        \label{fig:CommMessages}
+    \end{subfigure}
+    \caption{Results for the communication comparison of ES and ESPC on the Cart Pole environment with $n=50$ where the communication parameter is varied $m=5,10,15,30,45$ and $k=10$ over 200 episodes and 20 trials.}
+    \label{fig:CPComm}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    % \begin{subfigure}{0.4\textwidth}
+    %     \centering
+    %     \includegraphics[width=\textwidth]{Figures/ESPC/Comm_vec/Ant/reward.png}
+    %     \caption{The cumulative average reward received by agents}
+    %     \label{fig:AntCommReward}
+    % \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Comm_vec_3/Ant/episodic_reward.png}
+        \caption{The episodic average reward received by agents}
+        \label{fig:AntCommEpisodicReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Comm_vec_3/Ant/num_messages.png}
+        \caption{The average number of messages sent from agents to central learner}
+        \label{fig:AntCommMessages}
+    \end{subfigure}
+    \caption{Results for the communication comparison of ES and ESPC on the Ant environment with $n=50$ where the communication parameter is varied $m=5,10,15,30,45$ and $k=10$ over 200 episodes and 6 trials.}
+    \label{fig:AntComm}
+\end{figure}
+
+
+
+\section{Effect of Gaussian utility distribution parameters}
+
+To evaluate how the length of the horizon for the rolling averages used to parameterize the assumed Gaussian distribution of utility from section \ref{sec:GaussianScheme} affects the performance of ESPC, I conducted an experiment where I varied the rolling average horizon $k$ with all other parameters fixed. I used $k=3,10,30$ with $n=50$, $m=25$ on the Cart Pole and Ant environments and compared against an instance of ES with $n=50$. All other system details were the same as in section \ref{sec:ESPCEval}. I trained over 200 and 300 episodes and averaged the results across 10 and 5 trials respectively.
+
+Figure \ref{fig:CPHorizon} shows the results of varying the horizon of the samples with which we estimate the utility distribution on the Cart Pole environment. All instances of ESPC attain rewards that exceed that of ES for most training episodes. We can observe that communication more closely tracks the learning as $k$ increases. This is because with larger $k$ a new reward sample has less of an effect on the rolling mean and variance, so an extreme sample has a larger difference from the updated mean and is thus more likely to be communicated. Therefore, when reward is increasing fast the amount of communication also increases.
+The result in the Ant environment are shown in figure \ref{fig:AntHorizon} with all instances of ESPC achieving higher reward than ES on all episodes by a significant margin. Across the two experiments there is no obvious effect of the value of $k$ on performance
+
+However, the effect of $k$ on communication is clear. The burn in period appears in figures \ref{fig:HorizonMessages} and \ref{fig:AntHorizon} to have length roughly equal to the value of $k$. I theorize that this is due to the fact that before we have completed $k$ episodes we use all past utility samples to calculate the mean and variance of the Gaussian distribution. This leads to the number of samples being used increasing on each step until step $k$. By central limit theorem (ignoring the fact that these samples are not iid) the sample variance will decrease with the inverse of the step number. A lower variance means that the probability of a sample being communicated given a constant utility greater than the mean gets larger over time and the probability of a sample being communicated given a constant utility less than the mean gets smaller over time. Since we are using a learning process with the objective of maximizing reward and the utility is proportional to reward, we can assume that the probability of getting a sample with utility greater than the mean is greater than the probability of getting a sample with utility less than the mean. Therefore, the probability that the sample is greater than another will likely be greater than $0.5$, so the mapping to the binomial will be skewed towards higher probabilities. This explains the increase in communication during the burn in period.
+
+% In varying the horizon with which we calculate the parameters for the utility distribution for ESPC the performance increases as the horizon is decreased. This is shown in figure \ref{fig:Horizon}. We theroize this is because relying on recent utility samples is more likely to give an accurate representation of the utility distribution. This has led us to believe that using a weighted mean and standard deviation as parameters for the utility distibution where recent samples are weighted more highly would also be effective.
+
+\begin{figure}[H]
+    \centering
+    % \begin{subfigure}{0.4\textwidth}
+    %     \centering
+    %     \includegraphics[width=\textwidth]{Figures/ESPC/Horizon_vec/CartPole/reward.png}
+    %     \caption{The cumulative average reward recieved by agents}
+    %     \label{fig:HorizonReward}
+    % \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Horizon_vec_3/CartPole/episodic_reward.png}
+        \caption{The episodic average reward received by agents}
+        \label{fig:HorizonEpisodicReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Horizon_vec_3/CartPole/num_messages.png}
+        \caption{The average number of messages sent from agents to the central learner}
+        \label{fig:HorizonMessages}
+    \end{subfigure}
+    \caption{Results for the horizon comparison of ES and ESPC on the Cart Pole environment with $n=50$ and $m=25$ where the rolling average horizon parameter is varied $k=3,10,30$ over 200 episodes and 10 trials.}
+    \label{fig:CPHorizon}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    % \begin{subfigure}{0.4\textwidth}
+    %     \centering
+    %     \includegraphics[width=\textwidth]{Figures/ESPC/Horizon_vec/Ant/reward.png}
+    %     \caption{The cumulative average reward received by agents}
+    %     \label{fig:AntHorizonReward}
+    % \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Horizon_vec_2/Ant/episodic_reward.png}
+        \caption{The episodic average reward received by agents}
+        \label{fig:AntHorizonEpisodicReward}
+    \end{subfigure}
+    \begin{subfigure}{0.4\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{Figures/ESPC/Horizon_vec_2/Ant/num_messages.png}
+        \caption{The average number of messages sent from agents to the central learner}
+        \label{fig:AntHorizonMessages}
+    \end{subfigure}
+    \caption{Results for the comparison of ES and ESPC on the Ant environment with $n=50$ and $m=25$ where the rolling average horizon parameter is varied $k=3,10,30$ over 300 episodes and 5 trials.}
+    \label{fig:AntHorizon}
+\end{figure}
+
+
+\section{Limitations and omitted experiments}
+In these experiments we tested ES and ESPC with the same parameters this, allows us to observe only the changes in performance that are a direct consequence of the change in algorithm. However, an alternative method would be to tune each algorithm individually and compare the peak performance of each algorithm as this will not necessarily occur for both when their parameters are the same. Doing this in addition to the experiments performed would be informative.
+
+I only tested on two environments with few trials and low number of episodes due to long runtimes for experiments. Increasing the number of environments would demonstrate the difference in performance between the algorithms more clearly and repeating experiments for longer training runs in many more trials would allow us to give bounds in performance on each of them and observe their asymptotic performance.
+
+Additionally, we did not employ some techniques to combat the brittleness of ES such as virtual batch normalization that have been effective in the past. This is because in the original publication they only became necessary when using CNNs on the Atari environments where enhanced exploration was required. However, in the simple gridworlds these techniques could have potentially improved performance.
+
+I also did not explore in great detail the quality of the Gaussian assumption made in \ref{sec:GaussianScheme}. This analysis could provide insight into why ESPC performed as it did and suggest ways in which we could improve performance further. Additionally, a comparison of the Gaussian against other distributions, especially those which could exhibit skew, would provide insight into the quality of the assumption. Similar to this a comparison of different utility functions would shed light on the quality of justification made in section \ref{sec:Utility}.
+
+% \subsection{Effect of utility distribution}
+
+% We compare a number of distributions for utility WHICH ONES? against the Gaussian distribution from \ref{sec:GaussianScheme} to evalutate which is preferable in which environments. The distributions we use are LIST DISTRIBUTIONS
+    
+
+
+% \begin{figure}
+%     \centering
+%     \begin{subfigure}{0.8\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{Figures/ESPC/Direct/FlappyBird/reward.png}
+%         \caption{The cumulative average reward recieved by agents}
+%         \label{fig:FBReward}
+%     \end{subfigure}
+%     \begin{subfigure}{0.8\textwidth}
+%         \centering
+%         \includegraphics[width=\textwidth]{Figures/ESPC/Direct/FlappyBird/num_messages.png}
+%         \caption{The cumulative number of messages sent from agents to the central learner}
+%         \label{fig:FBMessages}
+%     \end{subfigure}
+%     \caption{Results for the comparison of ES and ESPC on the flappy bird environment with $n=30$ where the communication parameter is varied $m=5,10,15,20,25$ over 1000 episodes}
+%     \label{fig:DirectFB}
+% \end{figure}
+
+
+
+% This is further shown in the results from the flappy bird environmnet in figure \ref{fig:CommFlappyReward}. Both ES and ESPC performed poorly, with ESPC always achieveing a lower cumulative reward over episodes, however, ES achieved the same average reward of $8.3$ on every episode, showing no exploration at all, whereas the variance of rewards achieved by ESPC was high sometimes achieveving over $16$ but often achieving $0$.
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{Figures/ESPC/Comm/Flappy/reward.png}
+%     \caption{The cumulative reward recieved by ES and ESPC on the flappy bird environmnet over 1000 episodes with $n=30$ where $m=5,10,15,20,25$}
+%     \label{fig:CommFlappyReward}
+% \end{figure}
+
+
+% \subsection{Qualitative comparison}

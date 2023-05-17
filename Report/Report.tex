@@ -25,7 +25,7 @@
     These systems collect large amounts of data from which it is possible to learn how to act more efficiently.
     Agents within the system can communicate in order to learn more efficiently than any individual and to overcome computational bottlenecks associated with working on the edge, where analysis is performed on device rather than transporting the data to the cloud for analysis.
     However, when distributed over a network the rate at which agents can communicate becomes a bottleneck for their rate of learning.
-    It is therefore desirable to develop communication efficient algorithms for these use cases. A class of algorithms based on reinforcement learning show promising results in this domain, allowing for collaboration between agents to optimize a reward signal. I consider a number of existing algorithms of this nature, discussing their respective strengths and weaknesses and conducting numerical comparison between them. As well as this, we propose a new algorithm, evolution strategies with probabilistic communication (ESPC), to adjustably reduce the number of messages sent by evolution strategies (ES), one of the best performing and most versatile algorithms. I provide justification for this algorithm as well as a direct comparison between the ES and ESPC. I show that in some scenarios ESPC performs better than ES in terms of both quality of learning and amount of communication.
+    It is therefore desirable to develop communication efficient algorithms for these use cases. A class of algorithms based on reinforcement learning show promising results in this domain, allowing for collaboration between agents to optimize a reward signal. I consider a number of existing algorithms of this nature, discussing their respective strengths and weaknesses and conducting numerical comparison between them. As well as this, I propose a new algorithm, evolution strategies with probabilistic communication (ESPC), to adjustably reduce the number of messages sent by evolution strategies (ES), one of the best performing and most versatile algorithms. I provide justification for this algorithm as well as a direct comparison between the ES and ESPC. I show that in some scenarios ESPC performs better than ES in terms of both quality of learning and amount of communication.
 \end{abstract}
 
 \tableofcontents
@@ -34,6 +34,10 @@
 \include{Chapters/Background}
 
 \include{Chapters/Project}
+
+\include{Chapters/NewAlgorithm}
+
+\include{Chapters/Conclusion}
 
 \bibliographystyle{plain}
 
