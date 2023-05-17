@@ -145,7 +145,7 @@ For EBCDQL and DAVIA in this environment communication was minimal. This is perh
 \end{figure}
 
 \section{Limitations}
-There experiments were heavily limited by the time it took to run them, this resulted in it being difficult to effectively tune the hyperparameters or each algorithm. Finer tuning could lead to a more accurate comparison of what these algorithms are capable of. In particular EBCDQL and DAVIA could be tuned to communicate more on Frozen Lake which could improve performance.
+These experiments were heavily limited by the time it took to run them, this resulted in it being difficult to effectively tune the hyperparameters for each algorithm. Finer tuning could lead to a more accurate comparison of what these algorithms are capable of. In particular EBCDQL and DAVIA could be tuned to communicate more on Frozen Lake which could improve performance.
 In addition to this I only tested on two fairly similar environments. On other environments, performance could differ, therefore, using a larger set of environments with more variety between them could give a better picture of algorithm performance. Lastly the experiment consisted of 2 thresholded algorithms but only one black-box algorithm and no gradient compression algorithms. Using a wider variety of algorithms would provide a clearer picture of the relative performance of algorithms within each category and of the performance of each category relative to the others.
 
 \section{Summary}
@@ -156,7 +156,7 @@ In summary, we have observed that
     \item ES is not effective in these environments but has excellent performance in terms of the size of messages sent
 \end{itemize}
 
-ES performs poorly in these experiments proving to be brittle in simple environments. However, ES is considerably more flexible than any of the other algorithms tested here. Its effectiveness on environments infamous for their difficulty such as the MuJoCo humanoid shows the performance exhibited here does not well represent its strengths. The size of messages sent is the minimum possible, however, the frequency of the messages is poor. One way to improve this is to use a probabilistic communication scheme to reduce the number of messages sent. This is the focus of the subsequent chapter.
+ES performs poorly in these experiments proving to be brittle in simple environments. However, ES is considerably more flexible than any of the other algorithms tested here. Its effectiveness on environments infamous for their difficulty such as the MuJoCo humanoid shows the performance exhibited here does not well represent its strengths. The size of messages sent are very small, however, the frequency of the messages is poor. One way to improve this is to use a probabilistic communication scheme to reduce the number of messages sent. This is the focus of the subsequent chapter.
 
 % As the simplest algorithm, not designed for communication efficiency, DQL provides a baseline for the other algorithms to compare against. We see that in simple Grid it performes well in terms of quality of learning but proves ineffective on the Frozen lake environment in this regard. Its communication performance is poor with whole trajectories being sent every episode. This is particularly inefficient as the size of these messages grows with episode length. It is also in violation of the prohibition of communication of raw data by FRL. The tabular value function means DQL is limited to use on only simple environments. To improve performance and flexibility one could make use of an approximate value function.
 
